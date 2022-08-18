@@ -1,6 +1,7 @@
 
 #include "comandos.h"
-#include <direct.h>
+#include <io.h>
+#include <conio.h> 
 
 void Comando::identificacionCMD(Parametros p)
 {
