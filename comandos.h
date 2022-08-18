@@ -56,6 +56,7 @@ class Comando{
         Parametros param;
         void identificacionCMD(Parametros p);
         void crearArchivo(string tamano, string path, string ajuste, string dim);
+        
 };
 
 #endif // COMANDO_H

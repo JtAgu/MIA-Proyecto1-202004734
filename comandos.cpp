@@ -1,5 +1,6 @@
 
 #include "comandos.h"
+#include <direct.h>
 
 void Comando::identificacionCMD(Parametros p)
 {
@@ -7,7 +8,7 @@ void Comando::identificacionCMD(Parametros p)
     { // Se identifica el tipo de comando
         if (p.s != " " && p.path != " ")
         { // Se validan los parametros para el comando
-            
+
             crearArchivo(p.s, p.path, p.f, p.u);
         }
         else
@@ -54,15 +55,38 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
         // Escritura de Bloque en Archivo
         int limite = 0;
         FILE *archivo;
-        
-        
-        archivo = fopen(path.c_str(), "w");
-        while (limite != size_file)
+        string direct = "";
+        ifstream f(path.c_str());
+        if (!f.good())
         {
-            fwrite(&bloque, 1024, 1, archivo);
-            limite++;
+            int start = 0;
+            int end = path.find("/");
+            string del = "/";
+            while (end != -1)
+            {
+                cout << path.substr(start, end - start) << endl;
+                direct += path.substr(start, end - start);
+                if (mkdir(direct.c_str()) == 0)
+                {
+                    cout << "created directory - " << direct << endl;
+                }
+                else
+                {
+                    cout << "create_directory() failed" << endl;
+                }
+                direct += "/";
+                start = end + del.size();
+                end = path.find("/", start);
+            }
+            cout << path.substr(start, end - start);
         }
-        fclose(archivo);
+         archivo = fopen(path.c_str(), "w");
+         while (limite != size_file)
+        {
+           fwrite(&bloque, 1024, 1, archivo);
+           limite++;
+        }
+         fclose(archivo);
 
         /*MBR nuevo;
         nuevo.mbr_tamano = 5;
@@ -88,13 +112,9 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
         fclose(archivo);
         cout << "ARCHIVO BINARIO CREADO" << endl;
         cout << "" << endl;*/
-    }else{
-         cout << "Error creando Disco: tamaño invalido a ejecución." << endl;
     }
-}
-
-bool fileExists(std::string const &name)
-{
-    ifstream f(name.c_str());
-    return f.good();
+    else
+    {
+        cout << "Error creando Disco: tamaño invalido a ejecución." << endl;
+    }
 }
