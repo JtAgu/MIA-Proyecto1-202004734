@@ -35,6 +35,7 @@ typedef struct{
     string fileN="";
     string p = " ";
     string destino = " ";
+    string ruta=" ";
 }Parametros;
 
 typedef struct{
@@ -54,6 +55,7 @@ class Comando{
     public:
         Parametros param;
         void identificacionCMD(Parametros p);
+        void crearArchivo(string tamano, string path, string ajuste, string dim);
 };
 
 #endif // COMANDO_H

@@ -614,5 +614,107 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
        
             cmd.identificacionCMD(cmd.param);
        
-    } 
+    }  else if(comando == "recovery"){
+        cmd.param.Comando = "recovery";
+
+        for(int i=0; i<parametros.size(); i++){
+            param = parametros.at(i);
+            if(param.find("-id->") == 0){
+                param = replace_txt(param, "-id->", "");
+                param = replace_txt(param, "\"", "");
+                cmd.param.id = param;
+            }    else {
+                cout << "*PARAMETRO INCORRECTO*" << endl;
+            }
+        }
+        // Ejecucion de metodo
+        if(cmd.param.id!=" "){
+            cmd.identificacionCMD(cmd.param);
+        }else{
+            cout << "*INFORMACION INSUFICIENTE PARA EJECUCION*" << endl;
+        }
+    } else if(comando == "loss"){
+        cmd.param.Comando = "loss";
+
+        for(int i=0; i<parametros.size(); i++){
+            param = parametros.at(i);
+            if(param.find("-id->") == 0){
+                param = replace_txt(param, "-id->", "");
+                param = replace_txt(param, "\"", "");
+                cmd.param.id = param;
+            }    else {
+                cout << "*PARAMETRO INCORRECTO*" << endl;
+            }
+        }
+        // Ejecucion de metodo
+        if(cmd.param.id!=" "){
+            cmd.identificacionCMD(cmd.param);
+        }else{
+            cout << "*INFORMACION INSUFICIENTE PARA EJECUCION*" << endl;
+        }
+    }
+    else if (comando == "exec")
+    {
+        cmd.param.Comando = "exec";
+
+        for (int i = 0; i < parametros.size(); i++)
+        {
+            param = parametros.at(i);
+            if (param.find("-path=") == 0)
+            {
+                param = replace_txt(param, "-path=", "");
+                param = replace_txt(param, "\"", "");
+                cmd.param.path = param;
+
+                ifstream archivo(param);
+                string linea = "";
+                // Obtener línea de archivo, y almacenar contenido en "linea"
+                while (getline(archivo, linea))
+                {
+                    // Lo vamos imprimiendo
+                    cout<<"EJECUTANDO:\t"<<linea<<endl;
+                    analizar(linea);
+                    
+                }
+                
+            }
+            else
+            {
+
+            }
+        }
+        // Ejecucion de metodo
+        //cmd.identificacionCMD(cmd.param);
+    }else if(comando == "rep"){
+        cmd.param.Comando = "rep";
+
+        for(int i=0; i<parametros.size(); i++){
+            param = parametros.at(i);
+            if(param.find("-id->") == 0){
+                param = replace_txt(param, "-id->", "");
+                param = replace_txt(param, "\"", "");
+                cmd.param.id = param;
+            } else if(param.find("-path->") == 0){
+                param = replace_txt(param, "-path->", "");
+                param = replace_txt(param, "\"", "");
+                cmd.param.path = param;
+            }  else if(param.find("-id->") == 0){
+                param = replace_txt(param, "-id->", "");
+                param = replace_txt(param, "\"", "");
+                cmd.param.id = param;
+            }  else if(param.find("-ruta->") == 0){
+                param = replace_txt(param, "-ruta->", "");
+                param = replace_txt(param, "\"", "");
+                cmd.param.ruta = param;
+            }   else {
+                cout << "*PARAMETRO INCORRECTO*" << endl;
+            }
+        }
+        // Ejecucion de metodo
+        if(cmd.param.id!=" "&&cmd.param.path!=" "&&cmd.param.name!=" "){
+            cmd.identificacionCMD(cmd.param);
+        }else{
+            cout << "*INFORMACION INSUFICIENTE PARA EJECUCION*" << endl;
+        }
+    }
 }
