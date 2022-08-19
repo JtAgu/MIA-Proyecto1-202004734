@@ -53,7 +53,7 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
     {
         // Preparacion Bloque
 
-        string direct = "/";
+        string direct = "";
 
         string name_p = "";
 
@@ -104,7 +104,7 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
         FILE *archivo;
         direct += solo_nombre;
         direct+= ".dsk";
-
+        printf(direct);
         
         string crear = "sudo -S mkdir -p \'" + direct + "\'";
         system(crear.c_str());
