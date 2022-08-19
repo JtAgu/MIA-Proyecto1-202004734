@@ -1,7 +1,12 @@
 
 #include "comandos.h"
-#include <io.h>
-#include <conio.h> 
+#include <iostream>
+#include <string.h>
+#include <algorithm>
+#include <cstdlib>
+#include <math.h>
+#include <time.h>
+#include <unistd.h>
 
 void Comando::identificacionCMD(Parametros p)
 {
@@ -47,6 +52,46 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
     if (tamano > 0)
     {
         // Preparacion Bloque
+
+        string direct = "";
+
+        string name_p = "";
+
+        int start = 0;
+        int end = path.find("/");
+        string del = "/";
+        while (end != -1)
+        {
+            cout << path.substr(start, end - start) << endl;
+            direct += path.substr(start, end - start);
+            direct += "/";
+            start = end + del.size();
+            end = path.find("/", start);
+        }
+        name_p = path.substr(start, end - start);
+
+        string ncomando = name_p.substr(0, name_p.find("."));
+        char solo_nombre[64];
+        strcpy(solo_nombre, name_p.c_str());
+        for (char c : ncomando)
+        {
+            if (!isalnum(c) && !isalpha(c) && c != '_')
+            {
+                cout << "Error: El nombre debe solo puede contener numeros, letras y '_'." << endl;
+                return;
+            }
+        }
+        int pos = name_p.find(".");
+        name_p.erase(0, 1 + pos);
+
+        transform(name_p.begin(), name_p.end(), name_p.begin(), ::tolower);
+
+        if (name_p != "dsk")
+        {
+            cout << "Error: El nombre debe contener la extensión \".dsk\" al final" << endl;
+            return;
+        }
+
         char bloque[1024];
         for (int i = 0; i < 1024; i++)
         {
@@ -55,64 +100,78 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
 
         // Escritura de Bloque en Archivo
         int limite = 0;
+
         FILE *archivo;
-        string direct = "";
-        ifstream f(path.c_str());
-        if (!f.good())
+        direct += solo_nombre;
+        direct+= ".dsk";
+
+        
+        string crear = "sudo -S mkdir -p \'" + direct + "\'";
+        system(crear.c_str());
+        // cout<<aux<<endl;
+        string compermiso = "sudo -S chmod -R 777 \'" + direct + "\'";
+        system(compermiso.c_str());
+
+        if ((archivo = fopen(direct.c_str(), "w")) == NULL)
         {
-            int start = 0;
-            int end = path.find("/");
-            string del = "/";
-            while (end != -1)
+            printf("[ERROR]error al crear el disco!\n");
+        }
+        else
+        {
+            srand(time(NULL));
+            MBR p;
+
+            p.mbr_fecha_creacion = time(0);
+            p.mbr_tamano = size_file;
+            p.mbr_dsk_signature = (rand() % 99);
+
+            p.mbr_partition_1.part_status = '0';
+            p.mbr_partition_2.part_status = '0';
+            p.mbr_partition_3.part_status = '0';
+            p.mbr_partition_4.part_status = '0';
+
+            p.mbr_partition_1.part_type = '\0';
+            p.mbr_partition_2.part_type = '\0';
+            p.mbr_partition_3.part_type = '\0';
+            p.mbr_partition_4.part_type = '\0';
+
+            p.mbr_partition_1.part_fit = '\0';
+            p.mbr_partition_2.part_fit = '\0';
+            p.mbr_partition_3.part_fit = '\0';
+            p.mbr_partition_4.part_fit = '\0';
+
+            p.mbr_partition_1.part_start = 0;
+            p.mbr_partition_2.part_start = 0;
+            p.mbr_partition_3.part_start = 0;
+            p.mbr_partition_4.part_start = 0;
+
+            p.mbr_partition_1.part_s = 0;
+            p.mbr_partition_2.part_s = 0;
+            p.mbr_partition_3.part_s = 0;
+            p.mbr_partition_4.part_s = 0;
+
+            strcpy(p.mbr_partition_1.part_name, "");
+            strcpy(p.mbr_partition_2.part_name, "");
+            strcpy(p.mbr_partition_3.part_name, "");
+            strcpy(p.mbr_partition_4.part_name, "");
+
+            // escribir el mbr
+            fwrite(&p, sizeof(MBR), 1, archivo);
+
+            // llenando los espacios en blanco
+            char vacio = '\0';
+            int i = 0;
+
+            for (i = sizeof(MBR); i < size_file; i++)
             {
-                cout << path.substr(start, end - start) << endl;
-                direct += path.substr(start, end - start);
-                if (mkdir(direct.c_str()) == 0)
-                {
-                    cout << "created directory - " << direct << endl;
-                }
-                else
-                {
-                    cout << "create_directory() failed" << endl;
-                }
-                direct += "/";
-                start = end + del.size();
-                end = path.find("/", start);
+                fwrite(&vacio, 1, 1, archivo);
             }
-            cout << path.substr(start, end - start);
+
+            fclose(archivo);
+
+            
+            cout << "\tDISCO CREADO CORRECTAMENTE..." << endl;
         }
-         archivo = fopen(path.c_str(), "w");
-         while (limite != size_file)
-        {
-           fwrite(&bloque, 1024, 1, archivo);
-           limite++;
-        }
-         fclose(archivo);
-
-        /*MBR nuevo;
-        nuevo.mbr_tamano = 5;
-        auto t = std::time(nullptr);
-        auto tm = *std::localtime(&t);
-
-        std::ostringstream oss;
-        oss << std::put_time(&tm, "%d/%m/%Y :: %H:%M:%S");
-        string str = oss.str();
-        strcpy(nuevo.mbr_fecha_creacion, str.c_str());
-
-        srand(time(NULL));
-
-        int num = rand();
-
-        archivo = fopen("Archivo.dk", "rb+");
-
-        num = rand() % 11;
-        nuevo.mbr_dsk_signature = num;
-        fseek(archivo, 0 * sizeof(MBR), SEEK_SET);
-        fwrite(&nuevo, sizeof(nuevo), 1, archivo);
-        fseek(archivo, 0 * sizeof(MBR), SEEK_SET);
-        fclose(archivo);
-        cout << "ARCHIVO BINARIO CREADO" << endl;
-        cout << "" << endl;*/
     }
     else
     {

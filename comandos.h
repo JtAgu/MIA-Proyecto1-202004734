@@ -38,15 +38,26 @@ typedef struct{
     string ruta=" ";
 }Parametros;
 
+
 typedef struct{
-    string mbr_fecha_creacion = " ";
-    int mbr_tamano = 0;
-    int mbr_dsk_signature = 0;
-    char dsk_fit='\0';
-    string mbr_partition_1="";
-    string mbr_partition_2="";
-    string mbr_partition_3="";
-    string mbr_partition_4="";
+    char part_status;
+    char part_type;
+    char part_fit;
+    int part_start;
+    int part_s;
+    char part_name[16];
+} partitiond;
+
+
+typedef struct{
+    time_t mbr_fecha_creacion;
+    int mbr_tamano;
+    int mbr_dsk_signature;
+    char dsk_fit;
+    partitiond mbr_partition_1;
+    partitiond mbr_partition_2;
+    partitiond mbr_partition_3;
+    partitiond mbr_partition_4;
 }MBR;
 
 
