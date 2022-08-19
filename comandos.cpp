@@ -53,7 +53,7 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
     {
         // Preparacion Bloque
 
-        string direct = "";
+        string direct = "/";
 
         string name_p = "";
 
