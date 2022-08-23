@@ -13,6 +13,13 @@
 
 using namespace std;
 
+
+typedef char times[50];
+static char metodoDeColocacionExtendida;
+static mnt_lista* listaDeParticiones;
+
+
+//ESTRUCTURAS DE USO PRINCIPAL
 typedef struct{
     string Comando = " ";
     string s = " ";
@@ -61,12 +68,96 @@ typedef struct{
 }MBR;
 
 
+typedef struct{
+    
+    char part_status;
+    char part_fit;
+    int part_start;
+    int part_s;
+    int part_next;
+    char part_name[16];
+}EBR;
 
+
+typedef struct{
+    int s_filesystem_type;
+    int s_inodes_count;
+    int s_blocks_count;
+    int s_free_blocks_count;
+    int s_free_inodes_count;
+    times s_mtime;
+    times s_mtime;
+    int s_mnt_count;
+    int s_magic;
+    int s_inode_s;
+    int s_block_s;
+    int s_firts_ino;
+    int s_first_blo;
+    int s_bm_inode_start;
+    int s_bm_block_start;
+    int s_inode_start;
+    int s_block_start;
+}superBloque;
+
+typedef struct{
+    int i_uid;     //UID del usuario propietario del archivo o carpeta
+    int i_gid;      //GID al grupo al que pertenece
+    int i_size;     //tamaño del archivo en bytes
+    times i_atime;  //ultima fecha que se leyó el inodo sin modificarlo
+    times i_ctime;  //fecha en la que se creó el inodo
+    times i_mtime;  //ultima fecha en la que se modifico el inodo
+    int i_block[15];//arreglo de punteros, los prieros 12 son directos, 13 indirecto, 14 indirecto doble, 15 indirecto triple (-1 si no se usan)
+    char i_type;    //1 = archivo, 0 = carpeta
+    int i_perm;
+}inodo;
+
+typedef struct{
+    char b_name[12];
+    int b_inodo;    //apuntador hacia el innodo asociado
+}content;
+
+
+typedef struct{
+    content b_content[4];
+}bloque;
+
+
+
+
+
+//AQUI VAN ESTRUCTURAS AUXILIARES QUE SERVIRAN PARA ACARREAR DATOS DE FORMA ORDENADA EN EJECUION
+
+
+typedef struct{
+    bool encontrado;
+    EBR B_ebr;
+} prtLogica;
+
+
+typedef struct mnt_nodo{
+    partitiond mnt_particion;   //aplicable en las primaria
+    EBR mnt_ebr;                //esto si es extendida
+    times tiempo;              //tiempo en que fue montada la particion
+    char mnt_ruta[512];
+    char mnt_id[16];
+    struct mnt_nodo *siguiente;
+}mnt_nodo;
+
+typedef struct mnt_lista{
+    mnt_nodo* cabeza;
+}mnt_lista;
+
+
+
+//DECLARACION DE FUNCIONES DE COMANDO
 class Comando{
     public:
         Parametros param;
         void identificacionCMD(Parametros p);
         void crearArchivo(string tamano, string path, string ajuste, string dim);
+        void eliminarArchivo(string path);
+        void fdisk(string dimension,string tamano,string path,string tipo,string ajuste,string del,string name,string add);
+        void Cmount(string name,string path);
         
 };
 

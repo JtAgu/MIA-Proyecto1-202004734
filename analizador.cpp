@@ -40,6 +40,7 @@ void Analizador::analizar(string entrada){
 }
 
 void Analizador::identificarParametros(string comando, vector<string> parametros){
+    //PASANDO POR EL COMANDO A RECONOCER CADA PARAMETRO PERMITIDO
     string param = "";
     if(comando == "mkdisk"){
         cmd.param.Comando = "mkdisk";
@@ -95,9 +96,11 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
         for(int i=0; i<parametros.size(); i++){
             param = parametros.at(i);
             if(param.find("-s->") == 0){
+                if(cmd.param.add_==" "){
                 param = replace_txt(param, "-s->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.s = param;
+                }
             }else if(param.find("-t->") == 0){
                 param = replace_txt(param, "-t->", "");
                 param = replace_txt(param, "\"", "");
@@ -123,15 +126,17 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "\"", "");
                 cmd.param.name = param;
             } else if(param.find("-add->") == 0){
+                if(cmd.param.s==" "){
                 param = replace_txt(param, "-add->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.add_ = param;
+                }
             }  else {
                 cout << "*PARAMETRO INCORRECTO*" << endl;
             }
         }
         // Ejecucion de metodo
-        if(cmd.param.s!=" " && cmd.param.path!=" "&& cmd.param.name!=" "){
+        if(cmd.param.path!=" "&& cmd.param.name!=" "){
             cmd.identificacionCMD(cmd.param);
         }else{
             cout << "*INFORMACION INSUFICIENTE PARA EJECUCION*" << endl;
@@ -716,5 +721,7 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
         }else{
             cout << "*INFORMACION INSUFICIENTE PARA EJECUCION*" << endl;
         }
+    }else{
+        cout << "*COMANDO IRRECONOCIBLE*" << endl;
     }
 }
