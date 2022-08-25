@@ -724,4 +724,26 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
     }else{
         cout << "*COMANDO IRRECONOCIBLE*" << endl;
     }
+    cmd.param.Comando = " ";
+    cmd.param.s = " ";
+    cmd.param.f = " ";
+    cmd.param.u = " ";
+    cmd.param.t = " ";
+    cmd.param.path = " ";
+    cmd.param.delete_ = " ";
+    cmd.param.name = " ";
+    cmd.param.add_ = " ";
+    cmd.param.id = " ";
+    cmd.param.type = " ";
+    cmd.param.fs = " ";
+    cmd.param.usr = " ";
+    cmd.param.pass = " ";
+    cmd.param.grp = " ";
+    cmd.param.ugo = " ";
+    cmd.param.r = " ";
+    cmd.param.cont = " ";
+    cmd.param.fileN=" ";
+    cmd.param.p = " ";
+    cmd.param.destino = " ";
+    cmd.param.ruta=" ";
 }

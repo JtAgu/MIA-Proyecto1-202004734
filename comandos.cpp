@@ -88,11 +88,11 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
 
     if (dimen == 'k' || dimen == 'K')
     {
-        size_file = tamano;
+        size_file = tamano*1024;
     }
     else if (dimen == 'm' || dimen == 'M' || dim == " ")
     {
-        size_file = tamano * 1024;
+        size_file = tamano * 1024 *1024;
     }
     else
     {
@@ -200,6 +200,12 @@ void Comando::crearArchivo(string tam, string path, string ajuste, string dim)
             p.mbr_partition_3.part_s = 0;
             p.mbr_partition_4.part_s = 0;
 
+            if(ajuste==" "){
+                ajuste="w";
+            }
+            
+            p.dsk_fit=ajuste.at(0);
+
             strcpy(p.mbr_partition_1.part_name, "");
             strcpy(p.mbr_partition_2.part_name, "");
             strcpy(p.mbr_partition_3.part_name, "");
@@ -277,7 +283,7 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
         cout << "Error: comando Fdisk no puede tener parametros contradictorios" << endl;
         return;
     }
-
+    cout<<tamano.size()<<endl;
     if(tamano!=" "){
         
         MBR disco=leerMBR(path);
@@ -291,19 +297,21 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
         particiones[3] = disco.mbr_partition_4;
         int tam=atoi(tamano.c_str());
         if(dimension!=" "){
-            if(tipo=="k"){
-
-            }else if (tipo=="m"){
+            if(dimension=="k"){
                 tam=tam*1024;
-            }else if (tipo=="b"){
-                tam=tam/1024;
+            }else if (dimension=="m"){
+                tam=tam*1024*1024;
+            }else if (dimension=="b"){
+                
             }else{
                 cout<<"Error: el parametro -unit solo reconoce: B, K y M. "<<endl;
                 return;
             }
+        }else{
+            tam=tam*1024;
         }
 
-        if(tipo!="L"){
+        if(tipo!="l"){
             for (int i = 0; i < 4; i++) {
                 if(particiones[i].part_s!=0){
                     prtActiva[i]=1;
@@ -320,11 +328,11 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
                 }
             }
 
-            if(tipo=="E"){
+            if(tipo=="e"){
                 for (int i = 0; i < 4; i++) {
                     string tipoA="";
                     tipoA=particiones[i].part_type;
-                    if(tipoA=="E"){
+                    if(tipoA=="e"){
                         cout<<"Error: Solo puede haber una partición extendida por disco. "<<endl;
                         return;
                     }
@@ -339,6 +347,7 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
             
             if(prtActiva[0]==0 && prtActiva[1]==0 && prtActiva[2]==0 && prtActiva[3]==0){ 
                 tamanoDisponible = disco.mbr_tamano - (sizeof (disco) + 1);
+                
                 if (tam > tamanoDisponible) {
                     cout<<"Error: el tamaño de la partición supera al espacio disponible"<<endl;
                     return;
@@ -505,10 +514,21 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
             cout<<"El tamaño disponible en el disco es de "<<tamanoDisponible<<" bytes"<<endl;
             cout<<"Se creará una partición con "<<tam<<" bytes"<<endl;
             cout<<"en la partición No."<<(particionSeleccionada+1)<<" del disco"<<endl;
+            
+
+            
+            if(ajuste==" "){
+                ajuste="w";
+            }
+            
+            if(tipo==" "){
+                tipo="p";
+            }
+
             particiones[particionSeleccionada].part_status='0';
             particiones[particionSeleccionada].part_type=tipo.at(0);
             particiones[particionSeleccionada].part_fit=ajuste.at(0);
-            particiones[particionSeleccionada].part_s=atoi(tamano.c_str());
+            particiones[particionSeleccionada].part_s=tam;
             strcpy(particiones[particionSeleccionada].part_name,name.c_str());
 
             switch (particionSeleccionada) {
@@ -554,7 +574,7 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
             for (i = 0; i < 4; i++) {
                 tipo="";
                 tipo=particiones[i].part_type;
-                if(tipo=="E"){
+                if(tipo=="e"){
                     hayExt = true;
                     break;
                 }
@@ -565,7 +585,9 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
             int tamanoDiponible = 0;
 
             if(hayExt==true) {
+                i=i+1;
                 cout<<"La partición extendida es la "<<i<<"del disco "<<endl;
+                i=i-1;
                 inicio = particiones[i].part_start;
                 tamanoA = particiones[i].part_s;
                 tamanoDiponible = inicio + tamanoA; 
@@ -583,7 +605,7 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
 
                     fseek(f, inicio, SEEK_SET);
                     fread(&B_ebr, sizeof (EBR), 1, f);
-                    if (B_ebr.part_fit == 'B' || B_ebr.part_fit == 'F' || B_ebr.part_fit == 'W') {
+                    if (B_ebr.part_fit == 'b' || B_ebr.part_fit == 'f' || B_ebr.part_fit == 'w') {
                         EBR anterior;
                         anterior = B_ebr;
                         int siguiente = B_ebr.part_next;
@@ -593,7 +615,7 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
                             fseek(f, siguiente, SEEK_SET);
                             fread(&aux, sizeof (EBR), 1, f);
 
-                            if (aux.part_fit == 'B' || aux.part_fit == 'F' || aux.part_fit == 'W') { //Hay siguiente
+                            if (aux.part_fit == 'b' || aux.part_fit == 'f' || aux.part_fit == 'w') { //Hay siguiente
                                 siguiente = aux.part_next;
                                 anterior = aux;
                             } else { 
@@ -623,6 +645,10 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
                             }
                         }
                     }else {
+                        if(ajuste==" "){
+                           ajuste="w";
+                        }
+                        if(tam<tamanoA){
                         fseek(f, inicio, SEEK_SET);
                         B_ebr.part_status = '0';
                         B_ebr.part_fit = ajuste.at(0);
@@ -632,6 +658,11 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
                         strcpy(B_ebr.part_name, name.c_str());
                         fwrite(&B_ebr, sizeof (B_ebr), 1, f);
                         cout<<"Se creó el primer EBR"<<endl;
+                        }else
+                        {
+                            cout<<"TAMAÑO INSUFICIENTE PARA PARTICION LOGICA"<<endl;
+                        }
+                        
                     }
                     fclose(f);
                 }
@@ -642,7 +673,15 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
         }
         
     }else if(del!=" "){
-
+        string confirmacion="";
+        cout << "¿ESTA SEGURO DE ELIMINAR ESTA PARTICION? ( Y / N )" << endl;
+        getline(cin,confirmacion);
+        if(confirmacion=="y"||confirmacion=="Y"){
+            cFdisk_del(path,del,name);
+        }else{
+            cout << "VOLVIENDO PRINCIPAL" << endl;
+        }
+        
     }else if (add!=" "){
         cFdisk_add(dimension,path,name,add);
     }
@@ -691,6 +730,7 @@ void cFdisk_add(string unit, string path, string name, string add) {
         }
     }
 
+
     int prtActiva[] = {0,0,0,0};
 
     for (int j = 0; j < 4; j++) {
@@ -698,6 +738,7 @@ void cFdisk_add(string unit, string path, string name, string add) {
             prtActiva[j]=1;
         }
     }
+    
 
     int tamanoDisponible = 0;
     if(encontrado==true){
@@ -898,6 +939,7 @@ void cFdisk_add(string unit, string path, string name, string add) {
 }
 
 void cFdisk_del(string path, string delet, string name) {
+    
     MBR B_mbr = leerMBR(path);
     partitiond particiones[4];
     particiones[0] = B_mbr.mbr_partition_1;
@@ -925,7 +967,7 @@ void cFdisk_del(string path, string delet, string name) {
 
     if(encontrado==false){
         for (int j = 0; j < 4; j++) {
-            if (particiones[j].part_type=='E') {
+            if (particiones[j].part_type=='e') {
                 prtLogica log = buscarLogica(path,name,particiones,j);
                 encLog = log.encontrado;
                 logic = log.B_ebr;
@@ -944,37 +986,7 @@ void cFdisk_del(string path, string delet, string name) {
         if(particiones[i].part_status=='0'){
             cout << "Eliminando la Particion " << i + 1 << ", Nombre: " << particiones[i].part_name << endl;
 
-            if (strncmp("fast", delet.c_str(), sizeof("fast")) == 0) {
-                cout << "Tipo = fast, size " << particiones[i].part_s << endl;
-
-                if(particiones[i].part_type=='E'){
-
-                    FILE *f;
-                    if ((f = fopen(path.c_str(), "r+b")) == NULL) {
-                        
-                            cout << "Error: no se ha podido al abrir el disco!\n";
-                        
-                    } else {
-                        fseek(f, particiones[i].part_start, SEEK_SET);
-                        //llenando los espacios en blanco
-                        char vacio = '\0';
-                        int i = 0;
-                        for (i = 0; i < particiones[i].part_s; i++) {
-                            fwrite(&vacio, 1, 1, f);
-                        }
-                        fclose(f);
-                    }
-                    cout << "Eliminando particiones logicas de la extendida : " << particiones[i].part_name << endl;
-                }
-
-                particiones[i].part_s = 0;
-                particiones[i].part_start = 0;
-                particiones[i].part_fit = ' ';
-                strcpy(particiones[i].part_name, "");
-                particiones[i].part_status = '0';
-                particiones[i].part_type = ' ';
-
-            } else {
+            
                 cout << "Tipo =full, size " << particiones[i].part_s << endl;
 
                 FILE *f;
@@ -1000,7 +1012,7 @@ void cFdisk_del(string path, string delet, string name) {
                 particiones[i].part_status = '0';
                 particiones[i].part_type = ' ';
 
-            }
+            
 
             if (i == 0) {
                 B_mbr.mbr_partition_1 = particiones[i];
@@ -1020,16 +1032,7 @@ void cFdisk_del(string path, string delet, string name) {
         cout << "Eliminando la Particion Lógica, Nombre: " << logic.part_name << endl;
 
         if(logic.part_status=='0') {
-            if (strncmp("fast", delet.c_str(), sizeof("fast")) == 0) {
-                cout << "Tipo = fast, size " << logic.part_s << endl;
-
-                logic.part_fit = '\0';
-                logic.part_start = 0;
-                strcpy(logic.part_name, "");
-                logic.part_s = 0;
-                logic.part_status = '0';
-
-            } else {
+            
                 cout << "Tipo =full, size " << logic.part_s << endl;
 
                 FILE *f;
@@ -1054,7 +1057,7 @@ void cFdisk_del(string path, string delet, string name) {
                 logic.part_s = 0;
                 logic.part_status = '0';
 
-            }
+            
         }else{
             cout<<"Error: debe desmontar la partición para poder eliminarla"<<endl;
         }
@@ -1085,7 +1088,7 @@ prtLogica buscarLogica(string path, string name, partitiond particiones[4], int 
 
         fseek(f, inicio, SEEK_SET);
         fread(&B_ebr, sizeof(EBR), 1, f);
-        if (B_ebr.part_fit == 'B' || B_ebr.part_fit == 'F' || B_ebr.part_fit == 'W') {
+        if (B_ebr.part_fit == 'b' || B_ebr.part_fit == 'f' || B_ebr.part_fit == 'w') {
             char nombre1[16] = "";
             char nombre2[16] = "";
 
@@ -1107,7 +1110,7 @@ prtLogica buscarLogica(string path, string name, partitiond particiones[4], int 
                 fseek(f, siguiente, SEEK_SET);
                 fread(&aux, sizeof(EBR), 1, f);
 
-                if (aux.part_fit == 'B' || aux.part_fit == 'F' || aux.part_fit == 'W') { //Hay siguiente
+                if (aux.part_fit == 'b' || aux.part_fit == 'f' || aux.part_fit == 'w') { //Hay siguiente
 
                     strcpy(nombre1, aux.part_name);
                     strcpy(nombre2, name.c_str());
@@ -1127,6 +1130,8 @@ prtLogica buscarLogica(string path, string name, partitiond particiones[4], int 
         fclose(f);
         return rtrnLogica;
     }
+    prtLogica n;
+    return n;
 }
 
 
@@ -1149,7 +1154,7 @@ EBR devLogica(string path, string name){
     bool encLog = false;
 
     for (int j = 0; j < 4; j++) {
-        if (particiones[j].part_type=='E') {
+        if (particiones[j].part_type=='e') {
             metodoDeColocacionExtendida = particiones[j].part_fit;
             prtLogica log = buscarLogica(path,name,particiones,j);
             encLog = log.encontrado;
@@ -1163,7 +1168,8 @@ EBR devLogica(string path, string name){
 
 
 void Comando::Cmount(string name,string path){
-    partitiond part = devolverParticion(path, name); //si se econtro en primaria o secundaria
+    //primero buscamos en lista de primarias
+    partitiond part = BuscarPrimaria(path, name); 
     EBR eb;
     eb.part_fit='\0';
     strcpy(eb.part_name,"");
@@ -1171,10 +1177,11 @@ void Comando::Cmount(string name,string path){
     eb.part_s=0;
     eb.part_start=0;
 
-    if (part.part_fit == 'B' || part.part_fit == 'F' || part.part_fit == 'W') {//si no hay primaria, buscar en la secundaria
+    if (part.part_fit == 'b' || part.part_fit == 'f' || part.part_fit == 'w') {//verificamos si existe
         bool existe = retornarN(name,path);
         if(existe==false) {
-            mntPush(listaDeParticiones, part, eb, path); //se ingresa la particion a la lista.
+            //push a la lista
+            mntPush(listaDeParticiones, part, eb, path); 
             actualizarStatus(path, name, '1');
             cout << "\t...................Se ha montado la partición................" << endl;
         }else{
@@ -1183,7 +1190,7 @@ void Comando::Cmount(string name,string path){
     } else {
         eb = devLogica(path,name);
         //eb = devolverLogica(ruta, nombre);
-        if (eb.part_fit == 'B' || eb.part_fit == 'F' || eb.part_fit == 'W') {
+        if (eb.part_fit == 'b' || eb.part_fit == 'f' || eb.part_fit == 'w') {
             bool existe = retornarN(name,path);
             if(existe== false){
                 mntPush(listaDeParticiones, part, eb, path);
@@ -1199,7 +1206,7 @@ void Comando::Cmount(string name,string path){
 
 }
 
-partitiond devolverParticion(string ruta, string nombre) {
+partitiond BuscarPrimaria(string ruta, string nombre) {
     MBR B_mbr = leerMBR(ruta);
     //buscando la posicion de la partición logica
     partitiond particiones[4];
@@ -1211,7 +1218,7 @@ partitiond devolverParticion(string ruta, string nombre) {
     int i;
     for (i = 0; i < 4; i++) {
         if (strncmp(particiones[i].part_name, nombre.c_str(), 16) == 0) {
-            if (particiones[i].part_type == 'P') {
+            if (particiones[i].part_type == 'p') {
                 return particiones[i];
             }else{
                 break;
@@ -1252,12 +1259,31 @@ mnt_nodo* mntCrearNodo(partitiond particion, EBR logica, string ruta) {
     nodo->mnt_particion = particion;
     nodo->mnt_ebr = logica;
     strcpy(nodo->mnt_ruta, ruta.c_str());
+    
 
-    char resultado = letraDeDisco(listaDeParticiones, ruta);
-    strcpy(nodo->mnt_id, "vd00"); //aquí tengo que recorrere la lista para colocarle el id que se necesita
-    nodo->mnt_id[2] = resultado;
-    nodo->mnt_id[3] = numeroDeDisco(listaDeParticiones, resultado);
+    
+    nodo->mnt_id[0] = 3;
+    nodo->mnt_id[1] = 4;
+    string direct = "";
 
+    string name_p = "";
+
+    int start = 0;
+    int end = ruta.find("/");
+    string del = "/";
+    while (end != -1)
+    {
+        //cout << path.substr(start, end - start) << endl;
+        direct += ruta.substr(start, end - start);
+        direct += "/";
+        start = end + del.size();
+        end = ruta.find("/", start);
+    }
+    name_p = ruta.substr(start, end - start);
+    nodo->mnt_id[2] = numeroDeDisco(listaDeParticiones,name_p);
+    for(int i=0;i<name_p.size();i++){
+        nodo->mnt_id[i+3]=name_p.at(i);
+    }
     time_t tiem = time(0);
 
     srand(time(NULL));
@@ -1268,44 +1294,22 @@ mnt_nodo* mntCrearNodo(partitiond particion, EBR logica, string ruta) {
 }
 
 
-char letraDeDisco(mnt_lista*lista, string ruta) {
-    mnt_nodo*puntero = lista->cabeza;
-    char letraTemporal = 'a';
-    int retorno = 0;
-    if (lista->cabeza == NULL) {
-        return 'a';
-    }
-    while (puntero) {
-        retorno = strncmp(ruta.c_str(), puntero->mnt_ruta, 512);
-        if (retorno == 0) {
-            char reto = puntero->mnt_id[2];
-            return reto;
-            //si lo encontro retorna 0
-        } else {
-            int resul = strcmp(&letraTemporal, &puntero->mnt_id[2]);
-            if ((puntero->mnt_id[2]) > letraTemporal)
-                letraTemporal = puntero->mnt_id[2]; //se va buscando el mas grande
-        }
-        puntero = puntero->siguiente;
-    };
 
-    if (retorno == 0) {
-        return 'a';
 
-    } else {
-        return letraTemporal + 1;
-    }
-}
-
-char numeroDeDisco(mnt_lista*lista, char letra) {
+char numeroDeDisco(mnt_lista*lista, string name) {
     mnt_nodo*puntero = lista->cabeza;
     char letraTemporal = '1';
     int retorno = 1;
     if (lista->cabeza == NULL) {
         return '1';
     }
+    
     while (puntero) {
-        if (letra == puntero->mnt_id[2])
+        string namea="";
+        for(int i=3;i<16;i++){
+            namea+=to_string(puntero->mnt_id[i]);
+        }
+        if (name != namea)
             retorno = 0;
         //retorno= strcmp(&letra,&puntero->mnt_id[2]);//retorna 0 si son iguales
         if (retorno != 0) {
@@ -1355,7 +1359,7 @@ void actualizarStatus(string path, string name, char status){
 
     if(encontrado==false){
         for (int j = 0; j < 4; j++) {
-            if (particiones[j].part_type=='E') {
+            if (particiones[j].part_type=='e') {
                 prtLogica log = buscarLogica(path,name,particiones,j);
                 encLog = log.encontrado;
                 logic = log.B_ebr;
@@ -1374,9 +1378,9 @@ void actualizarStatus(string path, string name, char status){
     if (encontrado == true) {
         cout << "Actualizando Status de la partición " << i + 1 << ", Nombre: " << particiones[i].part_name << endl;
 
-        if(particiones[i].part_type=='P'){
+        if(particiones[i].part_type=='p'){
             particiones[i].part_status = status;
-        }
+       }
 
         if (i == 0) {
             B_mbr.mbr_partition_1 = particiones[i];
@@ -1417,7 +1421,7 @@ bool retornarN(string nombre, string ruta) {
         cout<<ruta<<" "<< puntero->mnt_ruta<<endl;
         r1 = strcmp(ruta.c_str(), puntero->mnt_ruta);
         //cout<<nombre<<" "<<puntero->mnt_particion.part_name<<" "<<puntero->mnt_ebr.part_name<<endl;
-        if (puntero->mnt_particion.part_fit == 'B' || puntero->mnt_particion.part_fit == 'F' || puntero->mnt_particion.part_fit == 'W') {
+        if (puntero->mnt_particion.part_fit == 'b' || puntero->mnt_particion.part_fit == 'f' || puntero->mnt_particion.part_fit == 'w') {
             r2 = strcmp(nombre.c_str(), puntero->mnt_particion.part_name);
         }else{
             r2 = strcmp(nombre.c_str(), puntero->mnt_ebr.part_name);
@@ -1429,5 +1433,10 @@ bool retornarN(string nombre, string ruta) {
         puntero = puntero->siguiente;
     }
     return false;
+}
+
+void inicializarListaMount() {
+    listaDeParticiones = (mnt_lista*) malloc(sizeof (mnt_lista)); //inicializando las listas
+    listaDeParticiones->cabeza = NULL;
 }
 

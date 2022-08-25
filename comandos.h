@@ -16,7 +16,6 @@ using namespace std;
 
 typedef char times[50];
 static char metodoDeColocacionExtendida;
-static mnt_lista* listaDeParticiones;
 
 
 //ESTRUCTURAS DE USO PRINCIPAL
@@ -86,7 +85,6 @@ typedef struct{
     int s_free_blocks_count;
     int s_free_inodes_count;
     times s_mtime;
-    times s_mtime;
     int s_mnt_count;
     int s_magic;
     int s_inode_s;
@@ -147,7 +145,7 @@ typedef struct mnt_lista{
     mnt_nodo* cabeza;
 }mnt_lista;
 
-
+static mnt_lista* listaDeParticiones;
 
 //DECLARACION DE FUNCIONES DE COMANDO
 class Comando{
@@ -160,5 +158,15 @@ class Comando{
         void Cmount(string name,string path);
         
 };
+void cFdisk_add(string unit, string path, string name, string add);
+void cFdisk_del(string path, string delet, string name);
+
+prtLogica buscarLogica(string path, string name, partitiond particiones[4], int i);
+partitiond BuscarPrimaria(string ruta, string nombre);
+bool retornarN(string nombre, string ruta);
+void mntPush(mnt_lista* lista, partitiond particion, EBR logica, string path);
+void actualizarStatus(string path, string name, char status);
+mnt_nodo* mntCrearNodo(partitiond particion, EBR logica, string ruta);
+char numeroDeDisco(mnt_lista*lista, string name);
 
 #endif // COMANDO_H

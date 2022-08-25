@@ -2,7 +2,6 @@
 
 int main(){
     Analizador analisis;
-    
     string entradacmd = "";
     while(entradacmd != "exit"){
         cout << "*----------------------------------------------------------*" << endl;
