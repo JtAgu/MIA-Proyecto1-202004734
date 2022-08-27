@@ -85,6 +85,7 @@ typedef struct{
     int s_free_blocks_count;
     int s_free_inodes_count;
     times s_mtime;
+    times s_umtime;
     int s_mnt_count;
     int s_magic;
     int s_inode_s;
@@ -117,8 +118,17 @@ typedef struct{
 
 typedef struct{
     content b_content[4];
-}bloque;
+}bloqueCarpetas;
 
+
+typedef struct{
+    char b_content[64];
+}bloqueArchivos;
+
+
+typedef struct{
+    int b_pointers[16];
+}bloqueApuntadores;
 
 
 
@@ -147,6 +157,14 @@ typedef struct mnt_lista{
 
 static mnt_lista* listaDeParticiones;
 
+typedef struct{
+    char status;
+}bmInodo;
+
+typedef struct{
+    char status;
+}bmBloque;
+
 //DECLARACION DE FUNCIONES DE COMANDO
 class Comando{
     public:
@@ -156,8 +174,12 @@ class Comando{
         void eliminarArchivo(string path);
         void fdisk(string dimension,string tamano,string path,string tipo,string ajuste,string del,string name,string add);
         void Cmount(string name,string path);
-        
+        void cUnmount(string id);
+        void mkfs(string type,string id,string fs);
 };
+
+
+
 void cFdisk_add(string unit, string path, string name, string add);
 void cFdisk_del(string path, string delet, string name);
 
@@ -168,5 +190,9 @@ void mntPush(mnt_lista* lista, partitiond particion, EBR logica, string path);
 void actualizarStatus(string path, string name, char status);
 mnt_nodo* mntCrearNodo(partitiond particion, EBR logica, string ruta);
 char numeroDeDisco(mnt_lista*lista, string name);
+
+mnt_nodo retornarNodoMount(string ids);
+void crear_ext2(mnt_nodo part,int n,int inicio);
+superBloque crearSuper(mnt_nodo part,int n,int inicio);
 
 #endif // COMANDO_H

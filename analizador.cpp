@@ -22,6 +22,10 @@ string Analizador::replace_txt(string str, const string& from, const string& to)
 }
 
 void Analizador::analizar(string entrada){
+    if(entrada=="exit"){
+        TerminarMontado();
+        return;
+    }
     string entradacmd = entrada;
     // Transformacion de toda la entrada a minusculas
     transform(entradacmd.begin(), entradacmd.end(), entradacmd.begin(), ::tolower);

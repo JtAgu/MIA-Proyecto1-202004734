@@ -3,7 +3,7 @@ mkdisk -s->7 -u->M -path->/home/justin/MisDiscos/Disco3.dsk
 
 rmdisk -path->/home/justin/MisDiscos/Disco3.dsk
 
-fdisk -s->500 -u->b -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion1
+fdisk -s->500 -u->K -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion1
 fdisk -t->E -path->/home/justin/MisDiscos/Disco1.dsk -u->M -name->Particion2 -s->4
 fdisk -s->1 -t->L -u->M -f->BF -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion3
 fdisk -s->1 -t->L -u->M -f->BF -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion4
@@ -11,8 +11,16 @@ fdisk -s->1 -t->L -u->M -f->BF -path->/home/justin/MisDiscos/Disco1.dsk -name->P
 fdisk -s->300 -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion6
 
 fdisk -add->-500 -s->10 -u->K -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion4
-fdisk -name->Particion1 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
 
-mount -path->/home/justin/MisDiscos/Disco1.dsk –name->Particion1
+fdisk -name->Particion1 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
+fdisk -name->Particion3 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
+
+mount -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion1
+mount -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion2
+mount -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion3
+
+
+unmount -id->341Disco1
+unmount -id->342Disco1
 
 9.4 MB (9,437,184 bytes)

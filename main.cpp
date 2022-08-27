@@ -1,7 +1,9 @@
 #include "analizador.cpp"
+#include "comandos.h"
 
 int main(){
     Analizador analisis;
+    inicializarListaMount();
     string entradacmd = "";
     while(entradacmd != "exit"){
         cout << "*----------------------------------------------------------*" << endl;
@@ -11,6 +13,7 @@ int main(){
         getline(cin,entradacmd);
         analisis.analizar(entradacmd);
     }
+    analisis.analizar("exit");
     return 0;
 }
 
