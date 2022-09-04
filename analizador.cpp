@@ -245,12 +245,7 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
         }
     } else if(comando == "logout"){
         cmd.param.Comando = "logout";
-
-        if(cmd.param.id!=" "&&cmd.param.usr!=" "&&cmd.param.pass!=" "){
-            cmd.identificacionCMD(cmd.param);
-        }else{
-            cout << "*INFORMACION INSUFICIENTE PARA EJECUCION*" << endl;
-        }
+        cmd.identificacionCMD(cmd.param);
     } else if(comando == "mkgrp"){
         cmd.param.Comando = "mkgrp";
 
@@ -707,10 +702,10 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-path->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.path = param;
-            }  else if(param.find("-id->") == 0){
-                param = replace_txt(param, "-id->", "");
+            }  else if(param.find("-name->") == 0){
+                param = replace_txt(param, "-name->", "");
                 param = replace_txt(param, "\"", "");
-                cmd.param.id = param;
+                cmd.param.name = param;
             }  else if(param.find("-ruta->") == 0){
                 param = replace_txt(param, "-ruta->", "");
                 param = replace_txt(param, "\"", "");

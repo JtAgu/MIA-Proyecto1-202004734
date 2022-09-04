@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <string>
 #include <string.h>
+#include <vector>
 
 using namespace std;
 
@@ -141,6 +142,13 @@ typedef struct{
     EBR B_ebr;
 } prtLogica;
 
+typedef struct{
+    char j_tipo;
+    char j_nombre[16];
+    char j_contenido;
+    times j_fecha;
+    char Padre[12];
+}journaling;
 
 typedef struct mnt_nodo{
     partitiond mnt_particion;   //aplicable en las primaria
@@ -176,8 +184,25 @@ class Comando{
         void Cmount(string name,string path);
         void cUnmount(string id);
         void mkfs(string type,string id,string fs);
+        void LogIn(string usr,string pass,string id);
+        void mkgrp(string name);
+        void mkusr(string usr,string grp,string pass);
+
+        void rep(string name,string path,string id,string ruta);
 };
 
+typedef struct{
+    int Id=0;
+    char Grupo[10];
+    char name[10];
+    char pass[10];
+}UserLog;
+
+typedef struct{
+    int Id;
+    char name[10];
+    vector <UserLog> usuarios;
+}GrupoUser;
 
 
 void cFdisk_add(string unit, string path, string name, string add);
@@ -193,6 +218,34 @@ char numeroDeDisco(mnt_lista*lista, string name);
 
 mnt_nodo retornarNodoMount(string ids);
 void crear_ext2(mnt_nodo part,int n,int inicio);
-superBloque crearSuper(mnt_nodo part,int n,int inicio);
+void crear_ext3(mnt_nodo part,int n,int inicio);
+superBloque crearSuper(mnt_nodo part,int n,int inicio,int tipo);
+void EscribirBloqueMap(string path,bmBloque mapB[],int inicio, int n);
+void EscribirInodoMap(string path,bmInodo mapI[],int inicio,int n);
+void fechActual(times fecha);
+void EscribirBloqueArchivo(string path, int inicio,bloqueArchivos file);
+void EscribirBloqueCarpeta(string path, int inicio,bloqueCarpetas folder);
+void EscribirNodo(string path, int inicio,int n,inodo lista[]);
+void EscribirInodoUnidad(int posAct,inodo InodeUsers);
+void EscribirSuper(string path,superBloque super,int inicio);
+
+void BuscarUser(string path,int pos,string usr,string pass);
+void OrdenarUsers(int posC,string regTemp);
+string leerArchivo(inodo InodeUsers,FILE* archivo);
+string leerIndirecto(int pos,bloqueApuntadores apuntadores,FILE* archivo);
+string leerDobleIndirecto(int pos,bloqueApuntadores apuntadores,FILE* archivo);
+string leerTripleIndirecto(int pos,bloqueApuntadores apuntadores,FILE* archivo);
+int crearBloque(int tipo,string escribir,FILE* archivo);
+int BuscarInodo(string name,int pos,FILE* archivo);
+int recorrerCarpeta(string name,int pos,FILE* archivo);
+void escribirFile(int posAct,inodo InodeUsers,string nCont);
+
+void actualizar_bmInodo(int n);
+void actualizar_bmBlock(int n);
 
 #endif // COMANDO_H
+
+
+//cnijfilter-e400series-4.10-1-deb
+
+//tar xzvf cnijfilter-e400series-4.10-1-deb.tar.gz

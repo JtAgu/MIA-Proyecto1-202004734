@@ -6,6 +6,7 @@ int main(){
     inicializarListaMount();
     string entradacmd = "";
     while(entradacmd != "exit"){
+        cout<<""<<endl;
         cout << "*----------------------------------------------------------*" << endl;
         cout << "*                    [MIA] PROYECTO1                       *" << endl;
         cout << "*               JUSTIN AGUIRRE - 202004734                 *" << endl;

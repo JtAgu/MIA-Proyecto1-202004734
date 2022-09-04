@@ -1,19 +1,25 @@
 mkdisk -s->9 -u->M -path->/home/justin/MisDiscos/Disco1.dsk
 mkdisk -s->7 -u->M -path->/home/justin/MisDiscos/Disco3.dsk
 
+
 rmdisk -path->/home/justin/MisDiscos/Disco3.dsk
 
-fdisk -s->500 -u->K -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion1
-fdisk -t->E -path->/home/justin/MisDiscos/Disco1.dsk -u->M -name->Particion2 -s->4
+
+fdisk -s->20 -u->K -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion1
+fdisk -t->E -path->/home/justin/MisDiscos/Disco1.dsk -u->M -name->Particion2 -s->5
 fdisk -s->1 -t->L -u->M -f->BF -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion3
-fdisk -s->1 -t->L -u->M -f->BF -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion4
+fdisk -s->500 -t->L -u->K -f->BF -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion4
 fdisk -s->1 -t->L -u->M -f->BF -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion5
 fdisk -s->300 -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion6
+fdisk -s->700 -path->/home/justin/MisDiscos/Disco1.dsk -name->xd
 
-fdisk -add->-500 -s->10 -u->K -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion4
 
-fdisk -name->Particion1 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
-fdisk -name->Particion3 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
+fdisk -add->-200 -s->10 -u->K -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion4
+
+
+fdisk -name->Particion5 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
+fdisk -name->Particion4 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
+
 
 mount -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion1
 mount -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion2
@@ -22,5 +28,25 @@ mount -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion3
 
 unmount -id->341Disco1
 unmount -id->342Disco1
+
+
+mkfs -type->full -id->341disco1
+
+
+login -usr->root -pass->123 -id->341disco1
+login -usr->user1 -pass->usuario -id->341disco1
+
+
+mkgrp -name->usuarios
+
+
+mkusr -usr->user1 -pass->usuario -grp->usuarios
+
+mount -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion1
+rep -id->341Disco1 -path->/home/justin/misreportes/bitmap1.txt -name->mbr
+
+rep -id->341Disco1 -path->/home/justin/misdiscos/bitmap1.txt -name->bm_inode
+
+rep -id->341Disco1 -path->/home/justin/misdiscos/bitmap2.txt -name->bm_block
 
 9.4 MB (9,437,184 bytes)

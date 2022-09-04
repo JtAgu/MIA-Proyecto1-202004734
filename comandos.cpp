@@ -9,6 +9,8 @@
 #include <math.h>
 #include <time.h>
 #include <unistd.h>
+#include <vector>
+#include <fstream>
 
 const string fecha(time_t now) {
     struct tm  tstruct;
@@ -19,7 +21,11 @@ const string fecha(time_t now) {
     return buf;
 }
 
-
+UserLog logeado;
+vector <GrupoUser> leidos;
+superBloque superLog;
+string pathGlobal="";
+int inicioG=0;
 
 
 void Comando::identificacionCMD(Parametros p)
@@ -70,21 +76,82 @@ void Comando::identificacionCMD(Parametros p)
         { // Se validan los parametros para el comando
             Cmount(p.name,p.path);
         }
-        else
-        {
-            cout << "Error eliminando Disco: Parametros obligatorios no definidos." << endl;
-        }
+        
     }else if (p.Comando=="unmount"){
         if ( p.id != " ")
         { // Se validan los parametros para el comando
             cUnmount(p.id);
         }
-        else
-        {
-            cout << "Error eliminando Disco: Parametros obligatorios no definidos." << endl;
+        
+    }else if (p.Comando=="mkfs"){
+        
+            mkfs(p.type,p.id,p.fs);
+        
+    }else if (p.Comando=="login"){
+            if(logeado.Id==0){
+                LogIn(p.usr,p.pass,p.id);
+            }else{
+                cout<<"ERROR: YA HAY UN USUARIO LOGEADO!"<<endl;
+            }
+        
+    }else if (p.Comando=="logout"){
+            if(logeado.Id>0){
+                cout<<"CERRANDO SESION..."<<endl;
+                strcpy(logeado.name,"");
+                strcpy(logeado.Grupo,"");
+                strcpy(logeado.pass,"");
+                logeado.Id=0;
+
+                EscribirSuper(pathGlobal,superLog,inicioG);
+
+                leidos.clear();
+
+            }else{
+                cout<<"ERROR:  NO HAY NINGUN USUARIO LOGEADO!"<<endl;
+            }
+        
+    }else if (p.Comando=="mkgrp"){
+        if(logeado.Id>0){
+            if(strcmp(logeado.name,"root")==0){
+                mkgrp(p.name);
+            }else{
+                cout<<"ERROR: MKGRP SOLO PUEDE SER EJECUTADO POR ROOT!"<<endl;
+            }
+        }else{
+            cout<<"ERROR:  NO HAY NINGUN USUARIO LOGEADO!"<<endl;
+        }
+    }else if (p.Comando=="rmgrp"){
+        if(logeado.Id>0){
+            if(strcmp(logeado.name,"root")==0){
+
+            }else{
+                cout<<"ERROR: RMGRP SOLO PUEDE SER EJECUTADO POR ROOT!"<<endl;
+            }
+        }else{
+            cout<<"ERROR:  NO HAY NINGUN USUARIO LOGEADO!"<<endl;
+        }
+    }else if (p.Comando=="mkusr"){
+        if(logeado.Id>0){
+            if(strcmp(logeado.name,"root")==0){
+                mkusr(p.usr,p.grp,p.pass);
+            }else{
+                cout<<"ERROR: MKUSR SOLO PUEDE SER EJECUTADO POR ROOT!"<<endl;
+            }
+        }else{
+            cout<<"ERROR:  NO HAY NINGUN USUARIO LOGEADO!"<<endl;
+        }
+    }else if (p.Comando=="rmusr"){
+        if(logeado.Id>0){
+            if(strcmp(logeado.name,"root")==0){
+
+            }else{
+                cout<<"ERROR: RMUSR SOLO PUEDE SER EJECUTADO POR ROOT!"<<endl;
+            }
+        }else{
+            cout<<"ERROR:  NO HAY NINGUN USUARIO LOGEADO!"<<endl;
         }
     }else if (p.Comando == "rep"){ // Se identifica el tipo de comando
-
+        rep(p.name,p.path,p.id,p.ruta);
     }
 }
 
@@ -603,6 +670,7 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
                 cout<<"La partición extendida es la "<<i<<"del disco "<<endl;
                 i=i-1;
                 inicio = particiones[i].part_start;
+
                 tamanoA = particiones[i].part_s;
                 tamanoDiponible = inicio + tamanoA; 
 
@@ -616,9 +684,10 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
                     EBR B_ebr;
                     cout<<"Inicio: "<<inicio<<endl;
                     cout<<"Tamaño extendida "<<tamanoA<<endl;
-
+                    
                     fseek(f, inicio, SEEK_SET);
                     fread(&B_ebr, sizeof (EBR), 1, f);
+                    cout<<"FIT encontrado: "<<B_ebr.part_fit<<endl;
                     //VERIFICAMOS QUE EXISTE UN EBR ŔIMERO
                     if (B_ebr.part_fit == 'b' || B_ebr.part_fit == 'f' || B_ebr.part_fit == 'w') {
                         EBR anterior;
@@ -661,19 +730,22 @@ void Comando :: fdisk(string dimension,string tamano,string path,string tipo,str
                         }
                     }else {
                         //COMO NO EXISTE CREAMOS Y AÑADIMOS LA PARTICION LOGICA
-                        if(ajuste==" "){
+                        if(ajuste==" "||ajuste==""){
                            ajuste="w";
                         }
                         if(tam<tamanoA){
-                        fseek(f, inicio, SEEK_SET);
-                        B_ebr.part_status = '0';
-                        B_ebr.part_fit = ajuste.at(0);
-                        B_ebr.part_start = inicio;
-                        B_ebr.part_s= tam;
-                        B_ebr.part_next = -1;
-                        strcpy(B_ebr.part_name, name.c_str());
-                        fwrite(&B_ebr, sizeof (B_ebr), 1, f);
-                        cout<<"Se creó el primer EBR"<<endl;
+                            cout<<"iniciando"<<endl;
+                        
+                            B_ebr.part_status = '0';
+                            B_ebr.part_fit = ajuste.at(0);
+                            B_ebr.part_start = inicio;
+                            B_ebr.part_s= tam;
+                            B_ebr.part_next = -1;
+                            strcpy(B_ebr.part_name, name.c_str());
+                            cout<<"aqui va el ebr: "<<inicio<<endl;
+                            fseek(f, inicio, SEEK_SET);
+                            fwrite(&B_ebr, sizeof (EBR), 1, f);
+                            cout<<"Se creó el primer EBR"<<endl;
                         }else
                         {
                             cout<<"TAMAÑO INSUFICIENTE PARA PARTICION LOGICA"<<endl;
@@ -719,11 +791,11 @@ void cFdisk_add(string unit, string path, string name, string add) {
 
     int tam=atoi(add.c_str());
     if(unit=="B"||unit=="b"){
-        tam=tam/1024;
+        tam=tam;
     }else if(unit=="K"||unit=="k"){
-        
-    }else if(unit=="M"||unit=="m"){
         tam = 1024 * tam;
+    }else if(unit=="M"||unit=="m"){
+        tam = 1024 * tam*1024;
     }
 
     MBR B_mbr = leerMBR(path);
@@ -1518,18 +1590,18 @@ void Comando ::cUnmount(string id){
             
             if(strncmp(puntero->mnt_id,identificador,16)==0){
             
-                    //cout<<"3,1"<<endl;
+                    cout<<"3,1"<<endl;
                     if(pAnterior){
                         pAnterior->siguiente=NULL;
                     }else{
-                        puntero=NULL;
+                        listaDeParticiones->cabeza=NULL;
                     }
                     if(puntero->mnt_ebr.part_start!=0){
                         actualizarStatus(puntero->mnt_ruta,puntero->mnt_ebr.part_name,'0');
                     } else{
                         actualizarStatus(puntero->mnt_ruta,puntero->mnt_particion.part_name,'0');
                     }
-            
+                    
                 
             }else{
                 cout<<"* NO HAY REGISTRO DEL ID "<<id<<" *"<<endl;
@@ -1542,14 +1614,17 @@ void Comando ::cUnmount(string id){
 }
 
 mnt_nodo retornarNodoMount(string ids) {
+    //cout<<ids<<endl;
     mnt_lista* lista = listaDeParticiones;
     mnt_nodo* puntero = lista->cabeza;
     int retorno;
-
+    //cout<<ids<<endl;
     while (puntero) {
         retorno = strncmp(ids.c_str(), puntero->mnt_id, 16);
-        if (retorno == 0)//lo encontró
+        if (retorno == 0){//lo encontró
+            //cout<<ids<<endl;
             return *puntero;
+        }
         puntero = puntero->siguiente;
     }
     cout<<"ERROR: NO HAY REGISTRO DE ID"<<endl;
@@ -1588,7 +1663,7 @@ void Comando::mkfs(string type,string id,string fs){
             status = particion.mnt_ebr.part_status;
             pimerEspacioEBR = sizeof (EBR);
         }
-
+        //cout<<particion.mnt_id<<endl;
         if(fs==" "){
             fs="2fs";
         }
@@ -1604,58 +1679,227 @@ void Comando::mkfs(string type,string id,string fs){
                 crear_ext2(particion,n,part_inicio+pimerEspacioEBR);
             }
         }    
+        if(type=="3fs"){
+            double TamanoPart = (double) part_tamano;
+            double NumInodos;
+            NumInodos = (TamanoPart - sizeof(superBloque)) / (4.0 + sizeof(inodo) + 3*64 + sizeof(journaling));        
+            
+            int nInodo = (int) NumInodos;
+
+            crear_ext3(particion,nInodo,part_inicio+pimerEspacioEBR);
+        }
     }
     
 }
 
 void crear_ext2(mnt_nodo part,int n,int inicio){
-    superBloque super= crearSuper(part,n,inicio);
+    superBloque super= crearSuper(part,n,inicio,2);
     EscribirSuper(part.mnt_ruta,super,inicio);
     bmBloque bitmapBloques[n*3];
     bmBloque aux;
-    
+    //cout<<part.mnt_id<<endl;
     bitmapBloques[0].status='1';
+    bitmapBloques[1].status='1';
     aux.status='0';
-    for(int i=1;i<n*3;i++){
+    for(int i=2;i<n*3;i++){
         bitmapBloques[i]=aux;
     }
-
-    EscribirBloque(part.mnt_ruta,bitmapBloques,super.s_bm_block_start,3*n);
-
+    //cout<<part.mnt_id<<endl;
+    EscribirBloqueMap(part.mnt_ruta,bitmapBloques,super.s_bm_block_start,3*n);
+    //cout<<part.mnt_id<<endl;
     bmInodo bitmapInodo[n];
     bmInodo auxI;
     bitmapInodo[0].status='1';
+    bitmapInodo[1].status='1';
     auxI.status='0';
-    for(int i=1;i<n;i++){
+    for(int i=2;i<n;i++){
         bitmapInodo[i]=auxI;
     }
-    EscribirInodo(part.mnt_ruta,bitmapInodo,super.s_bm_inode_start,n);
+
+    EscribirInodoMap(part.mnt_ruta,bitmapInodo,super.s_bm_inode_start,n);
 
 
     inodo root;
-    root.i_uid=1;
-    root.i_gid=1;
-    strcpy(root.i_atime,"");
-
+    
     times fech;
     fechActual(fech);
-    strcpy(root.i_ctime,fech);
+    
 
     for(int i=0;i<16;i++){
         root.i_block[i]=-1;
     }
+    
+    inodo lista[n];
+    for (int t = 0; t < n; t++) {
+        lista[t].i_uid=1;
+        lista[t].i_gid=1;
+        strcpy(lista[t].i_atime,"");
+        strcpy(lista[t].i_ctime,"");
+        strcpy(lista[t].i_mtime,"");
+        lista[t].i_type='0';
+        for(int i=0;i<16;i++){
+            lista[t].i_block[i]=-1;
+        }
+    }
+    
+    strcpy(lista[0].i_ctime,fech);
+    strcpy(lista[0].i_mtime,fech);
+    lista[0].i_type='0';
+    lista[0].i_block[0]=0;
+    lista[0].i_perm=700;
 
-    root.i_type=0;
+    strcpy(lista[1].i_ctime,fech);
+    strcpy(lista[1].i_mtime,fech);
+    lista[1].i_type='1';
+    lista[1].i_block[0]=1;
+    lista[1].i_perm=700;
 
+    EscribirNodo(part.mnt_ruta,super.s_inode_start,n,lista);
+    
+    super.s_firts_ino=super.s_firts_ino+2*sizeof(inodo);
+
+    bloqueCarpetas carpet;
+    content contenido;
+    contenido.b_inodo=1;
+    strcpy(contenido.b_name,"users.txt");
+    carpet.b_content[0]=contenido;
+    carpet.b_content[1].b_inodo=-1;
+    carpet.b_content[2].b_inodo=-1;
+    carpet.b_content[3].b_inodo=-1;
+    
+    EscribirBloqueCarpeta(part.mnt_ruta,super.s_first_blo,carpet);
+    super.s_first_blo=super.s_first_blo+sizeof(bloqueCarpetas);
+
+    bloqueArchivos fUsers;
+    strcpy(fUsers.b_content,"1,G,root\n1,U,root,root,123\n");
+    EscribirBloqueArchivo(part.mnt_ruta,super.s_first_blo,fUsers);
+    super.s_first_blo=super.s_first_blo+sizeof(bloqueArchivos);
+    EscribirSuper(part.mnt_ruta,super,inicio);
 }
 
-superBloque crearSuper(mnt_nodo part,int n,int inicio){
+void crear_ext3(mnt_nodo part,int n,int inicio){
+    superBloque super= crearSuper(part,n,inicio,3);
+    EscribirSuper(part.mnt_ruta,super,inicio);
+
+    journaling auxJ[n]; //CREA LISTA DE JOURN
+    int inicio1 =inicio + sizeof (superBloque); //ESTABLECE INICIO
+    FILE* archivo=fopen(part.mnt_ruta,"r+b");
+    for (int j = 0; j < n; j++) {
+        fseek(archivo, inicio1 + j * (sizeof (journaling)), SEEK_SET);
+        fwrite(&auxJ[j], sizeof (journaling), 1, archivo);
+    }
+
+
+    bmBloque bitmapBloques[n*3];
+    bmBloque aux;
+    //cout<<part.mnt_id<<endl;
+    bitmapBloques[0].status='1';
+    bitmapBloques[1].status='1';
+    aux.status='0';
+    for(int i=2;i<n*3;i++){
+        bitmapBloques[i]=aux;
+    }
+    //cout<<part.mnt_id<<endl;
+    EscribirBloqueMap(part.mnt_ruta,bitmapBloques,super.s_bm_block_start,3*n);
+    //cout<<part.mnt_id<<endl;
+    bmInodo bitmapInodo[n];
+    bmInodo auxI;
+    bitmapInodo[0].status='1';
+    bitmapInodo[1].status='1';
+    auxI.status='0';
+    for(int i=2;i<n;i++){
+        bitmapInodo[i]=auxI;
+    }
+
+    EscribirInodoMap(part.mnt_ruta,bitmapInodo,super.s_bm_inode_start,n);
+
+
+    inodo root;
+    
+    times fech;
+    fechActual(fech);
+    
+
+    for(int i=0;i<16;i++){
+        root.i_block[i]=-1;
+    }
+    
+    inodo lista[n];
+    for (int t = 0; t < n; t++) {
+        lista[t].i_uid=1;
+        lista[t].i_gid=1;
+        strcpy(lista[t].i_atime,"");
+        strcpy(lista[t].i_ctime,"");
+        strcpy(lista[t].i_mtime,"");
+        lista[t].i_type='0';
+        for(int i=0;i<16;i++){
+            lista[t].i_block[i]=-1;
+        }
+        lista[t].i_perm=700;
+    }
+    
+    strcpy(lista[0].i_ctime,fech);
+    strcpy(lista[0].i_mtime,fech);
+    lista[0].i_type='0';
+    lista[0].i_block[0]=0;
+
+    strcpy(lista[1].i_ctime,fech);
+    strcpy(lista[1].i_mtime,fech);
+    lista[1].i_type='1';
+    lista[1].i_block[0]=1;
+
+    EscribirNodo(part.mnt_ruta,super.s_inode_start,n,lista);
+    
+    super.s_firts_ino=super.s_firts_ino+2*sizeof(inodo);
+
+    bloqueCarpetas carpet;
+    content contenido;
+    contenido.b_inodo=1;
+    strcpy(contenido.b_name,"users.txt");
+    carpet.b_content[0]=contenido;
+    EscribirBloqueCarpeta(part.mnt_ruta,super.s_first_blo,carpet);
+    super.s_first_blo=super.s_first_blo+sizeof(bloqueCarpetas);
+
+    bloqueArchivos fUsers;
+    strcpy(fUsers.b_content,"1,G,root\n1,U,root,root,123\n");
+    EscribirBloqueArchivo(part.mnt_ruta,super.s_first_blo,fUsers);
+    super.s_first_blo=super.s_first_blo+sizeof(bloqueArchivos);
+    EscribirSuper(part.mnt_ruta,super,inicio);
+}
+
+superBloque crearSuper(mnt_nodo part,int n,int inicio,int tipo){
     superBloque super;
-    super.s_block_s=2;
+    if(tipo==2){
+        super.s_filesystem_type=2;
+        super.s_inodes_count=n;
+        super.s_blocks_count=3*n;
+        super.s_free_blocks_count=3*n-2;
+        super.s_free_inodes_count=n-2;
+        strcpy(super.s_umtime,part.tiempo);
+        strcpy(super.s_mtime,part.tiempo);
+        super.s_mnt_count=1;
+        super.s_magic=0xEF53;
+        super.s_inode_s=sizeof(inodo);
+        super.s_block_s=sizeof(bloqueCarpetas);
+
+        super.s_firts_ino = inicio + sizeof (superBloque) + 3 * n + n ; 
+        super.s_first_blo = super.s_firts_ino + n * sizeof (inodo); 
+
+        super.s_bm_inode_start = inicio + sizeof (superBloque);
+        super.s_bm_block_start = super.s_bm_inode_start + n;
+        cout<<"BLOCK "<<super.s_bm_block_start<<endl;
+        cout<<"INODO "<<super.s_bm_inode_start<<endl;
+
+
+        super.s_inode_start = super.s_firts_ino;
+        super.s_block_start = super.s_inode_start + n * sizeof (inodo);
+        return super;
+    }
+    super.s_filesystem_type=3;
     super.s_inodes_count=n;
     super.s_blocks_count=3*n;
-    super.s_free_blocks_count=3*n;
-    super.s_free_inodes_count=n;
+    super.s_free_blocks_count=3*n-2;
+    super.s_free_inodes_count=n-2;
     strcpy(super.s_umtime,part.tiempo);
     strcpy(super.s_mtime,part.tiempo);
     super.s_mnt_count=1;
@@ -1663,18 +1907,19 @@ superBloque crearSuper(mnt_nodo part,int n,int inicio){
     super.s_inode_s=sizeof(inodo);
     super.s_block_s=sizeof(bloqueCarpetas);
 
-    super.s_firts_ino = inicio + sizeof (superBloque) + 3 * n + n; //esta es la primer posicion y ya se agrego el +1 //primer inodo libre
+    super.s_firts_ino = inicio + sizeof (superBloque) + 3 * n + n+ n*sizeof(journaling); 
     super.s_first_blo = super.s_firts_ino + n * sizeof (inodo); 
 
-    super.s_bm_inode_start = inicio + sizeof (superBloque) +1;
-    super.s_bm_block_start = super.s_bm_inode_start + n+1;
+    super.s_bm_inode_start = inicio + sizeof (superBloque)+sizeof(journaling)*n;
+    super.s_bm_block_start = super.s_bm_inode_start + n;
 
-    super.s_inode_start = inicio + sizeof (superBloque) + 3 * n + n;
+    super.s_inode_start = super.s_firts_ino;
     super.s_block_start = super.s_inode_start + n * sizeof (inodo);
 
     return super;
-
 }
+
+
 
 void EscribirSuper(string path,superBloque super,int inicio){
     FILE* f;
@@ -1688,32 +1933,98 @@ void EscribirSuper(string path,superBloque super,int inicio){
 }
 
 
-void EscribirBloque(string path,bmBloque mapB[],int inicio, int n){
+void EscribirBloqueMap(string path,bmBloque mapB[],int inicio, int n){
+    FILE* f;
+    if((f=fopen(path.c_str(),"r+b"))==NULL){
+        cout<<"ERROR, NO SE PUDO ABRIR EL DISCO"<<endl;
+        return;
+    }
+    //cout<<"inicio "<<inicio<<endl;
+    for(int i=0;i<n;i++){
+        cout<<"voy por "<<(inicio+i)<<endl;
+        cout<<"con "<<mapB[i].status<<endl;
+        fseek(f, inicio+i, SEEK_SET);
+        fwrite(&mapB[i], sizeof (bmBloque), 1,f);
+    }
+    fclose(f);
+}
+
+
+void EscribirInodoMap(string path,bmInodo mapI[],int inicio,int n){
     FILE* f;
     if((f=fopen(path.c_str(),"r+b"))==NULL){
         cout<<"ERROR, NO SE PUDO ABRIR EL DISCO"<<endl;
         return;
     }
     for(int i=0;i<n;i++){
-    fseek(f, inicio+i*(sizeof(bmBloque)), SEEK_SET);
-    fwrite(&mapB[i], sizeof (superBloque), 1,f);
-    fclose(f);
+        cout<<"voy por "<<(inicio+i)<<endl;
+        cout<<"con "<<mapI[i].status<<endl;
+        fseek(f, inicio+i*(sizeof(bmInodo)), SEEK_SET);
+        fwrite(&mapI[i], sizeof (bmInodo), 1, f);
     }
+    fclose(f);
 }
 
-
-void EscribirInodo(string path,bmInodo mapI[],int inicio,int n){
-    FILE* f;
-    if((f=fopen(path.c_str(),"r+b"))==NULL){
-        cout<<"ERROR, NO SE PUDO ABRIR EL DISCO"<<endl;
+void EscribirNodo(string path, int inicio,int n,inodo lista[]){
+    FILE* archivo;
+    
+    if ((archivo = fopen(path.c_str(), "r+b")) == NULL) {
         return;
+    } else {
+        int j;
+        //cout<<inicio<<endl;
+        inodo i2;
+        for (j = 0; j < n; j++) {
+            fseek(archivo, inicio + j * (sizeof (inodo)), SEEK_SET);
+            fwrite(&lista[j], sizeof (lista[j]), 1, archivo);
+            fread(&i2,sizeof(i2),1,archivo);
+            //cout<<"inodo "<<j<<" tipo "<<i2.i_type<<endl;
+            //cout<<"inodo "<<j<<" tipo "<<to_string(lista[j].i_type)<<endl;
+        }
+        fclose(archivo);
     }
-    for(int i=0;i<n;i++){
-    fseek(f, inicio+i*(sizeof(bmInodo)), SEEK_SET);
-    fwrite(&mapI[i], sizeof (superBloque), 1, f);
-    }
-    fclose(f);
 }
+
+void EscribirBloqueCarpeta(string path, int inicio,bloqueCarpetas folder){
+    FILE* archivo;
+
+     if ((archivo = fopen(path.c_str(), "r+b")) == NULL) {
+        return;
+    } else {
+        
+        
+        fseek(archivo, inicio , SEEK_SET);
+        fwrite(&folder, sizeof (bloqueCarpetas), 1, archivo);
+        
+        fclose(archivo);
+    }
+}
+
+
+void EscribirBloqueArchivo(string path, int inicio,bloqueArchivos file){
+    FILE* archivo;
+
+     if ((archivo = fopen(path.c_str(), "r+b")) == NULL) {
+        return;
+    } else {
+            fseek(archivo, inicio , SEEK_SET);
+            fwrite(&file, sizeof (bloqueArchivos), 1, archivo);
+        }
+        fclose(archivo);
+}
+
+void EscribirBloqueApuntador(string path, int inicio,bloqueApuntadores file){
+    FILE* archivo;
+
+     if ((archivo = fopen(path.c_str(), "r+b")) == NULL) {
+        return;
+    } else {
+            fseek(archivo, inicio , SEEK_SET);
+            fwrite(&file, sizeof (bloqueApuntadores), 1, archivo);
+        }
+        fclose(archivo);
+}
+
 
 void fechActual(times fecha) {
     time_t     now = time(0);
@@ -1723,3 +2034,1228 @@ void fechActual(times fecha) {
     strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct);
     strcpy(fecha,buf);
 }
+
+
+
+void Comando:: LogIn(string usr,string pass,string id){
+    mnt_nodo montado=retornarNodoMount(id);
+    cout<<montado.mnt_ruta<<endl;
+    if(montado.mnt_ruta!=""){
+        int part_inicio = 0;
+        char part_colocacion = ' ';
+        int primerEspacioEBR = 0;
+        string path;
+        if (montado.mnt_particion.part_type == 'p') {
+            part_inicio = montado.mnt_particion.part_start;
+            part_colocacion = montado.mnt_particion.part_type;
+            path=montado.mnt_ruta;
+            primerEspacioEBR = 0;
+        } else {
+            part_inicio = montado.mnt_ebr.part_start;
+            part_colocacion = metodoDeColocacionExtendida;
+            path=montado.mnt_ruta;
+            primerEspacioEBR = sizeof (EBR);
+        }
+        pathGlobal=path;
+        inicioG=primerEspacioEBR+part_inicio;
+        BuscarUser(path,primerEspacioEBR+part_inicio,usr,pass);
+        
+    }
+}
+
+void BuscarUser(string path,int pos,string usr,string pass){
+    FILE* archivo;
+    archivo = fopen(path.c_str(), "rb+");
+    fseek(archivo, pos, SEEK_SET);
+    
+    //Buscamos el super bloque para poder acceder a la posicion de los inodos y bloques
+    fread(&superLog, sizeof(superBloque), 1, archivo);
+    
+    //posicion del 2do inodo (el inodo archivo users,txt)
+    int posAct=superLog.s_inode_start+sizeof(inodo);
+    inodo InodeUsers;
+
+    fseek(archivo,posAct, SEEK_SET);
+    fread(&InodeUsers, sizeof(InodeUsers), 1, archivo);
+
+
+
+    
+    string contenido=leerArchivo(InodeUsers,archivo);
+    //cout<<contenido<<endl;
+    fclose(archivo);
+    
+
+    string regTemp;
+    string delimiter="\n";
+    size_t posC;
+    
+    vector <string> Reg;
+
+    //separamos el contenido dentro de userx.txt separandolo por "\n"
+    while ((posC = contenido.find(delimiter)) != string::npos) {
+        regTemp=(contenido.substr(0, posC));
+        contenido.erase(0, posC + delimiter.length());
+        //Cada string ocnseguido aplicamos mismo metodo y separamos ṕor "," para obtener cada campo
+        //cout<<regTemp<<endl;
+        OrdenarUsers(posC,regTemp);
+        
+    }
+    //cout<<"sigo"<<endl;
+    //regTemp=(contenido.substr(0, posC));
+    //OrdenarUsers(posC,regTemp);
+    //cout<<"sigo"<<endl;
+    bool encontrado=false;
+    for(int k=0;k<leidos.size();k++){
+        for(int j=0;j<leidos[k].usuarios.size();j++){
+            
+            string nameReg=leidos[k].usuarios[j].name,PassReg=leidos[k].usuarios[j].pass;
+            if(strcmp(nameReg.c_str(),usr.c_str())==0){
+                if(strcmp(PassReg.c_str(),pass.c_str())==0){
+                    logeado=leidos[k].usuarios[j];
+                    cout<<"BIENVENIDO "<<logeado.name<<endl;
+                    encontrado=true;
+                    break;
+                }
+            }
+        }
+        if(encontrado){
+            break;
+        }
+    }
+    if(!encontrado){
+        cout<<"ERROR: USUARIO NO ENCONTRADO"<<endl;
+    }
+    //cout<<leidos.size()<<endl;       
+}
+
+void OrdenarUsers(int posC,string regTemp){
+    vector <string> Reg;
+    string delimiter2=",";
+    while ((posC = regTemp.find(delimiter2)) != string::npos) {
+        Reg.push_back(regTemp.substr(0, posC));
+        regTemp.erase(0, posC + delimiter2.length());
+    }
+    Reg.push_back(regTemp.substr(0, posC));
+        //Valuamos que el user o grupo no haya sido eliminado
+        /*for(int i=0;i<Reg.size();i++){
+            cout<<Reg[i]<<endl;
+        }*/
+        //cout<<"sigo"<<endl;
+    if(Reg[0]!="0"){
+        //Verificamos si es un grupo o usr
+        if(Reg[1]=="G"||Reg[1]=="g"){
+            GrupoUser g;
+            //cout<<"sigo"<<endl;
+            g.Id=atoi(Reg[0].c_str());
+            strcpy(g.name,Reg[2].c_str());
+            //Añadimos a la lista
+            leidos.push_back(g);
+            
+        }else if(Reg[1]=="U"||Reg[1]=="u"){
+            UserLog u;
+            u.Id=atoi(Reg[0].c_str());
+            strcpy(u.Grupo,Reg[2].c_str());
+            strcpy(u.name,Reg[3].c_str());
+            strcpy(u.pass,Reg[4].c_str());
+            GrupoUser auxG;
+            int cont=0;
+            //Buscamos el grupo al que pertenece
+            //cout<<"sigo"<<endl;
+            while(cont<leidos.size()){
+                auxG=leidos[cont];
+                string n1=auxG.name,n2=u.Grupo;
+                if(strcmp(n1.c_str(),n2.c_str())==0){
+                    //añadimos a la lista dentro de lista de grupos
+                    //cout<<"entre en el if"<<endl;
+                    auxG.usuarios.push_back(u);
+                    //cout<<auxG.usuarios.size()<<endl;;
+                    leidos[cont]=auxG;
+                    break;
+                }
+                cont++;
+            }
+            //cout<<"sigo"<<endl;
+        }
+    }
+    //cout<<"sigo"<<endl;
+}
+
+string leerArchivo(inodo InodeUsers,FILE* archivo){
+    
+    string contenido;
+    fclose(archivo);
+    archivo=fopen(pathGlobal.c_str(),"r+b");
+    //conseguimos el contenido dentro de los links de bloque del inodo
+    for(int i=0;i<16;i++){    
+
+        if(InodeUsers.i_block[i]>=0&&i<13){    
+            bloqueArchivos FileUsers;
+            //cout<<"Dentro de For: "<<InodeUsers.i_type<<endl;
+            int posAct=superLog.s_block_start+InodeUsers.i_block[i]*sizeof(bloqueArchivos);
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&FileUsers, sizeof(bloqueArchivos), 1, archivo);
+            
+            contenido+=FileUsers.b_content;
+            //cout<<"c "<<contenido<<endl;
+        }else if(i==13&&InodeUsers.i_block[i]>=0){
+            bloqueApuntadores apuntador;
+            int posAct=superLog.s_block_start+InodeUsers.i_block[i]*sizeof(bloqueArchivos);
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&apuntador, 64, 1, archivo);
+            contenido+=leerIndirecto(posAct,apuntador,archivo);
+        }else if(i==14&&InodeUsers.i_block[i]>=0){
+            bloqueApuntadores apuntador;
+            int posAct=superLog.s_block_start+InodeUsers.i_block[i]*sizeof(bloqueArchivos);
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&apuntador, 64, 1, archivo);
+            contenido+=leerDobleIndirecto(posAct,apuntador,archivo);
+        }else if(i==15&&InodeUsers.i_block[i]>=0){
+            bloqueApuntadores apuntador;
+            int posAct=superLog.s_block_start+InodeUsers.i_block[i]*sizeof(bloqueArchivos);
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&apuntador, 64, 1, archivo);
+            contenido+=leerTripleIndirecto(posAct,apuntador,archivo);
+        }
+    }
+    return contenido;
+}
+
+string leerIndirecto(int pos,bloqueApuntadores apuntadores,FILE* archivo){
+    bloqueArchivos file;
+    string contenido="";
+    for(int i=0;i<16;i++){
+        if(apuntadores.b_pointers[i]>=0){
+            int posAct=superLog.s_block_start+apuntadores.b_pointers[i]*sizeof(bloqueArchivos);
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&file, sizeof(bloqueApuntadores), 1, archivo);
+            contenido+=file.b_content;
+        }
+    }
+    return contenido;
+}
+
+string leerDobleIndirecto(int pos,bloqueApuntadores apuntadores,FILE* archivo){
+    bloqueApuntadores apuntadoresD;
+    string contenido="";
+    for(int i=0;i<16;i++){
+        if(apuntadores.b_pointers[i]>=0){
+            int posAct=superLog.s_block_start+apuntadores.b_pointers[i]*sizeof(bloqueArchivos);
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&apuntadoresD, sizeof(bloqueApuntadores), 1, archivo);
+            contenido+=leerIndirecto(posAct,apuntadoresD,archivo);
+        }
+    }
+    return contenido;
+}
+
+string leerTripleIndirecto(int pos,bloqueApuntadores apuntadores,FILE* archivo){
+    bloqueApuntadores apuntadoresT;
+    string contenido="";
+    for(int i=0;i<16;i++){
+        if(apuntadores.b_pointers[i]>=0){
+            int posAct=superLog.s_block_start+apuntadores.b_pointers[i]*sizeof(bloqueArchivos);
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&apuntadoresT, sizeof(bloqueApuntadores), 1, archivo);
+            contenido+=leerDobleIndirecto(posAct,apuntadoresT,archivo);
+        }
+    }
+    return contenido;
+}
+
+void Comando::mkgrp(string name){
+    int posAct=superLog.s_inode_start+sizeof(inodo);
+    inodo InodeUsers;   
+    for(int i=0;i<leidos.size();i++){
+        string nameA=leidos[i].name;
+        if(nameA==name){
+            cout<<"ERROR: NOMBRE DE GRUPO YA EN USO"<<endl;
+            return;
+        }
+    }
+    string nCont="";
+    int nMayor=0;
+    for(int i=0;i<leidos.size();i++){
+        if(nMayor<=leidos[i].Id){
+            nMayor=leidos[i].Id+1;
+        }
+    }
+    nCont+=to_string(nMayor);
+    nCont+=",G,";
+    nCont+=name;
+    nCont+="\n";
+    GrupoUser nuevo;
+    nuevo.Id=nMayor;
+    strcpy( nuevo.name,name.c_str());
+    
+    leidos.push_back(nuevo);
+
+
+    escribirFile(posAct,InodeUsers,nCont);
+}
+
+void escribirFile(int posAct,inodo InodeUsers,string nCont){
+    FILE* archivo;
+    archivo=fopen(pathGlobal.c_str(), "r+b");
+    fseek(archivo,posAct, SEEK_SET);
+    fread(&InodeUsers, sizeof(InodeUsers), 1, archivo);
+
+    bloqueArchivos bloqueA;
+    for(int i=0;i<16;i++){
+        posAct=InodeUsers.i_block[i]*sizeof(bloqueArchivos)+superLog.s_block_start;
+        if(i<13){
+            if(InodeUsers.i_block[i]==-1){
+                InodeUsers.i_block[i]=crearBloque(0,nCont,archivo);
+                
+                cout<<"GRUPO AÑADIDO CON EXITO"<<endl;
+                fclose(archivo);
+                EscribirInodoUnidad(superLog.s_inode_start+sizeof(inodo),InodeUsers);
+                return;
+            }
+            
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&bloqueA, sizeof(bloqueArchivos), 1, archivo);
+            
+            string cont=bloqueA.b_content;
+            if(64-cont.length()>0){
+                //cout<<"aqui imprime"<<endl;
+                if(64-cont.length()>nCont.size()){
+                    //cout<<"aqui imprime"<<endl;
+                    cont+=nCont;
+                    strcpy(bloqueA.b_content,cont.c_str());
+                    fseek(archivo,posAct, SEEK_SET);
+                    fwrite(&bloqueA,sizeof(bloqueArchivos),1,archivo);
+                    //fseek(archivoLog,posAct, SEEK_SET);
+                    //fread(&bloqueA, sizeof(bloqueArchivos), 1, archivoLog);
+                    //cout<<bloqueA.b_content<<endl;
+                    fclose(archivo);
+                    cout<<"ESCRITO CON EXITO"<<endl;
+                    return;
+                }else{
+                    int Cantidad=64-cont.length();
+                    string nContPartido="",resto="";
+                    for(int a=0;a<nCont.size();a++){
+                        if(a<Cantidad){
+                            nContPartido+=nCont.at(a);
+                        }else{
+                            resto+=nCont.at(a);
+                        }
+                    }
+                    cont+=nContPartido;
+                    strcpy(bloqueA.b_content,cont.c_str());
+                    fseek(archivo,posAct, SEEK_SET);
+                    fwrite(&bloqueA,sizeof(bloqueArchivos),1,archivo);
+                    fclose(archivo);
+                    cout<<bloqueA.b_content<<endl;
+                    //cout<<"posactual"<<posAct<<endl;
+                    //cout<<"posactualLibre"<<superLog.s_first_blo<<endl;
+                    archivo=fopen(pathGlobal.c_str(), "r+b");
+                    if(i<12){
+                        InodeUsers.i_block[i+1]=crearBloque(0,resto,archivo);
+                        
+                        //cout<<InodeUsers.i_block[i+1]<<endl;
+                        posAct=superLog.s_inode_start+sizeof(inodo);
+                        fclose(archivo);
+                        EscribirInodoUnidad(posAct,InodeUsers);
+
+                    }else{
+                        InodeUsers.i_block[i+1]=crearBloque(1,"",archivo);
+                        
+                        bloqueApuntadores punt;
+                        posAct=superLog.s_block_start+InodeUsers.i_block[i]*sizeof(bloqueApuntadores);
+                        fseek(archivo,posAct, SEEK_SET);
+                        fread(&punt, sizeof(bloqueApuntadores), 1, archivo);
+
+                        punt.b_pointers[0]=crearBloque(0,resto,archivo);
+                        
+                        fclose(archivo);
+                        EscribirInodoUnidad(posAct,InodeUsers);
+
+                        //fwrite(&bloqueA,sizeof(bloqueArchivos),1,archivoLog);
+                    }
+
+                    cout<<"ESCRITO CON EXITO"<<endl;
+                    //fclose(archivo);
+                    return;
+                    
+                }
+            }
+
+        }if(i==13){
+            posAct=superLog.s_block_start+InodeUsers.i_block[i]*sizeof(bloqueApuntadores);
+            if(InodeUsers.i_block[i]==-1){
+                InodeUsers.i_block[i]=crearBloque(1,nCont,archivo);
+                
+                bloqueApuntadores punt;
+                
+                fseek(archivo,posAct, SEEK_SET);
+                fread(&punt, sizeof(bloqueApuntadores), 1, archivo);
+
+                punt.b_pointers[0]=crearBloque(0,nCont,archivo);
+                
+                fseek(archivo,posAct, SEEK_SET);
+                fwrite(&punt,sizeof(bloqueArchivos),1,archivo);
+    
+                posAct=superLog.s_inode_start+sizeof(inodo);
+                fclose(archivo);
+                EscribirInodoUnidad(posAct,InodeUsers);
+
+                cout<<"GRUPO AÑADIDO CON EXITO"<<endl;
+                
+                return;
+            }
+            bloqueApuntadores punt;
+            
+            fseek(archivo,posAct, SEEK_SET);
+            fread(&punt, sizeof(bloqueApuntadores), 1, archivo);
+            for(int j=0;j<16;j++){
+                if(punt.b_pointers[i]==-1){
+                    punt.b_pointers[i]=crearBloque(0,nCont,archivo);
+                    
+                    cout<<"GRUPO AÑADIDO CON EXITO"<<endl;
+                    fclose(archivo);
+                    EscribirBloqueApuntador(pathGlobal,superLog.s_inode_start+sizeof(inodo),punt);
+                    return;
+                }
+                posAct=punt.b_pointers[i]*sizeof(bloqueArchivos)+superLog.s_block_start;
+                fseek(archivo,posAct, SEEK_SET);
+                fread(&bloqueA, sizeof(bloqueArchivos), 1, archivo);
+                string cont=bloqueA.b_content;
+                if(64-cont.length()>0){
+                    if(64-cont.length()>nCont.size()){
+                        cont+=nCont;
+                        strcpy(bloqueA.b_content,cont.c_str());
+                        fseek(archivo,posAct, SEEK_SET);
+                        fwrite(&bloqueA,sizeof(bloqueArchivos),1,archivo);
+                        cout<<"GRUPO AÑADIDO CON EXITO"<<endl;
+                        fclose(archivo);
+                        return;
+                    }else{
+                        int Cantidad=64-cont.length();
+                        string nContPartido="",resto="";
+                        for(int a=0;a<nCont.size();a++){
+                            if(a<Cantidad){
+                                nContPartido+=nCont.at(a);
+                            }else{
+                                resto+=nCont.at(a);
+                            }
+                        }
+                        cont+=nContPartido;
+                        strcpy(bloqueA.b_content,cont.c_str());
+                        fseek(archivo,posAct, SEEK_SET);
+                        fwrite(&bloqueA,sizeof(bloqueArchivos),1,archivo);
+                        fclose(archivo);
+                        //cout<<bloqueA.b_content<<endl;
+                        //cout<<"posactual"<<posAct<<endl;
+                        //cout<<"posactualLibre"<<superLog.s_first_blo<<endl;
+                        archivo=fopen(pathGlobal.c_str(), "r+b");
+                    
+                        InodeUsers.i_block[i+1]=crearBloque(0,resto,archivo);
+                        
+                        //cout<<InodeUsers.i_block[i+1]<<endl;
+                        posAct=superLog.s_inode_start+sizeof(inodo);
+                        fclose(archivo);
+                        EscribirBloqueApuntador(pathGlobal,superLog.s_inode_start+sizeof(inodo),punt);
+                        
+                    }
+                }
+            }
+        }
+        
+    }
+
+}
+
+void Comando::mkusr(string usr,string grp,string pass){
+    int posAct=superLog.s_inode_start+sizeof(inodo);
+    inodo InodeUsers;   
+    string nCont="";
+    int nMayor=0;
+    
+    for(int i=0;i<leidos.size();i++){
+        string name= leidos[i].name;
+        if(name==grp){
+            for(int j=0;j<leidos[i].usuarios.size();j++){
+                string nameU=leidos[i].usuarios[j].name;
+                if(nameU==usr){
+                    cout<<"ERRROR: NOMBRE DE USUARIO YA EN USO"<<endl;
+                    return;
+                }
+            }
+        }
+    }
+
+    for(int i=0;i<leidos.size();i++){
+        string name= leidos[i].name;
+        if(strcmp(name.c_str(),grp.c_str())==0){
+            //cout<<name<<" vs "<<grp<<endl;
+            for(int j=0;j<leidos[i].usuarios.size();j++){
+                cout<<j<<endl;
+                if(nMayor<=leidos[i].usuarios[j].Id){
+                    nMayor=leidos[i].usuarios[j].Id+1;
+                }
+            }
+            if(nMayor==0){
+                nMayor=1;
+            }
+            nCont+=to_string(nMayor);
+            nCont+=",U,";
+            nCont+=grp;
+            nCont+=",";
+            nCont+=usr;
+            nCont+=",";
+            nCont+=pass;
+            nCont+="\n";
+            UserLog nuevo;
+            nuevo.Id=nMayor;
+
+            strcpy( nuevo.name,usr.c_str());
+            strcpy( nuevo.pass,pass.c_str());
+            strcpy( nuevo.Grupo,grp.c_str());
+            
+            leidos[i].usuarios.push_back(nuevo);
+            break;
+        }
+        
+    }
+    
+    escribirFile(posAct,InodeUsers,nCont);
+}
+
+int crearBloque(int tipo,string escribir,FILE* archivo){
+    
+    if(tipo==0){
+        bloqueArchivos bloqueA;
+        strcpy(bloqueA.b_content,escribir.c_str());
+        fseek(archivo,superLog.s_first_blo, SEEK_SET);
+        fwrite(&bloqueA,sizeof(bloqueArchivos),1,archivo);
+    }else if(tipo==1){
+        bloqueApuntadores bloqueAp;
+        bloqueAp.b_pointers[0]=superLog.s_blocks_count-superLog.s_free_blocks_count+1;
+        fseek(archivo,superLog.s_first_blo, SEEK_SET);
+        fwrite(&bloqueAp,sizeof(bloqueApuntadores),1,archivo);
+    }
+    superLog.s_first_blo+=64;
+    int contador=superLog.s_blocks_count-superLog.s_free_blocks_count;
+    superLog.s_free_blocks_count--;
+    fclose(archivo);
+    
+    EscribirSuper(pathGlobal,superLog,inicioG);
+    actualizar_bmBlock(contador);
+    archivo = fopen(pathGlobal.c_str(), "r+b");
+    return contador;
+}
+
+void crearInodo(){
+
+}
+
+void EscribirInodoUnidad(int posAct,inodo InodeUsers){
+    FILE* archivo=fopen(pathGlobal.c_str(),"r+b");
+    
+    fseek(archivo,posAct, SEEK_SET);
+    fwrite(&InodeUsers,sizeof(inodo),1,archivo);
+    fclose(archivo);
+}
+
+
+int BuscarInodo(string name,int pos,FILE* archivo){
+    
+    inodo InodoActual;
+    fseek(archivo,pos, SEEK_SET);
+    fread(&InodoActual, sizeof(inodo), 1, archivo);
+    if(InodoActual.i_type=='0'){
+        for(int i=0;i<16;i++){
+            if(InodoActual.i_block[i]!=-1){
+                if(i<13){
+                    int num=recorrerCarpeta(name,InodoActual.i_block[i]*sizeof(bloqueCarpetas)+superLog.s_block_start,archivo);
+                    if(num!=-1){
+                        return num;
+                    }
+                
+                }if(i==13){
+                    bloqueApuntadores apuntadores;
+                    fseek(archivo,pos, SEEK_SET);
+                    fread(&apuntadores, sizeof(bloqueApuntadores), 1, archivo);
+                    for(int j=0;j<16;j++){
+                        if(apuntadores.b_pointers[j]!=-1){
+                            int num=recorrerCarpeta(name,apuntadores.b_pointers[j],archivo);
+                            if(num!=-1){
+                                return num;
+                            }
+                        }
+                    } 
+                }
+                
+            }
+        }
+    }
+    return -1;
+}
+
+
+
+int recorrerCarpeta(string name,int pos,FILE* archivo){
+    bloqueCarpetas bloque;
+    fseek(archivo,pos, SEEK_SET);
+    fread(&bloque, sizeof(bloqueCarpetas), 1, archivo);
+    for(int i=0;i<4;i++){
+        string n=bloque.b_content[i].b_name;
+        if(n==name){
+            return bloque.b_content[i].b_inodo;
+        }
+    }
+    for(int i=0;i<4;i++){
+        int num=BuscarInodo(name,bloque.b_content[i].b_inodo,archivo);
+        if(num!=-1){
+            return num;
+        }
+    }
+
+    return -1;
+}
+
+
+void actualizar_bmInodo(int n){
+    
+    int inodoCount=superLog.s_inodes_count;
+    char bitmapI[inodoCount];
+    FILE* archivo=fopen(pathGlobal.c_str(),"r+b");
+    fseek(archivo, superLog.s_bm_inode_start, SEEK_SET);
+    fread(&bitmapI, inodoCount, 1, archivo);
+
+    if(bitmapI[n]=='0'){
+        bitmapI[n]=='1';   
+    }else{
+        bitmapI[n]=='0';
+    }
+    fseek(archivo, superLog.s_bm_inode_start, SEEK_SET);
+    fwrite(&bitmapI, 1, superLog.s_inodes_count, archivo);
+    fclose(archivo);
+}
+
+
+void actualizar_bmBlock(int n){
+    
+    int inodoCount=superLog.s_blocks_count;
+    char bitmapI[inodoCount];
+    FILE* archivo=fopen(pathGlobal.c_str(),"r+b");
+    fseek(archivo, superLog.s_bm_block_start, SEEK_SET);
+    fread(&bitmapI, inodoCount, 1, archivo);
+
+    if(bitmapI[n]=='0'){
+        bitmapI[n]='1';   
+    }else{
+        bitmapI[n]='0';
+    }
+
+    fseek(archivo, superLog.s_bm_block_start, SEEK_SET);
+    fwrite(bitmapI, 1, inodoCount, archivo);
+    fclose(archivo);
+}
+
+
+void Comando::rep(string name,string path,string id,string ruta){
+        string direct = "";
+
+        string name_p = "";
+
+        int start = 0;
+        int end = path.find("/");
+        string del = "/";
+        while (end != -1)
+        {
+            //cout << path.substr(start, end - start) << endl;
+            direct += path.substr(start, end - start);
+            direct += "/";
+            start = end + del.size();
+            end = path.find("/", start);
+        }
+        name_p = path.substr(start, end - start);
+
+        string ncomando = name_p.substr(0, name_p.find("."));
+        char solo_nombre[64];
+        strcpy(solo_nombre, name_p.c_str());
+        for (char c : ncomando)
+        {
+            if (!isalnum(c) && !isalpha(c) && c != '_')
+            {
+                cout << "Error: El nombre debe solo puede contener numeros, letras y '_'." << endl;
+                return;
+            }
+        }
+        int pos = name_p.find(".");
+        name_p.erase(0, 1 + pos);
+
+        transform(name_p.begin(), name_p.end(), name_p.begin(), ::tolower);
+        //VERIFICAMOS EXTENSION DEL DISCO
+        
+
+        char bloque[1024];
+        for (int i = 0; i < 1024; i++)
+        {
+            bloque[i] = '\0';
+        }
+
+        // Escritura de Bloque en Archivo
+        int limite = 0;
+
+        FILE *archivo;
+        
+        //CREACION DE CARPETAS/DIRECTORIOS
+        string crear = "sudo -S mkdir " + direct ;
+        system(crear.c_str());
+        // cout<<aux<<endl;
+        string compermiso = "sudo chmod 777 " + direct ;
+        system(compermiso.c_str());
+        //CREACION DE DISCO
+        if (false)
+        {
+            printf("ERROR: NO SE PUDO GENERAR EL ARCHIVO\n");
+            return;
+        }else{
+            //fclose(archivo);
+            superBloque sb;
+            mnt_nodo particion=retornarNodoMount(id);
+        if(particion.mnt_ruta!=""){
+            int part_inicio = 0;
+            int EBRi = 0;
+            char pathD[512];
+            string name;
+            if (particion.mnt_particion.part_type == 'p') {
+                part_inicio = particion.mnt_particion.part_start;
+                strcpy(pathD,particion.mnt_ruta);
+                EBRi = 0;
+                
+            } else {
+                part_inicio = particion.mnt_ebr.part_start;
+                strcpy(pathD,particion.mnt_ruta);
+                EBRi = sizeof (EBR);
+            }
+            particion.mnt_particion.part_name;
+            int inicio=EBRi+part_inicio;
+            archivo=fopen(particion.mnt_ruta,"r+b");
+            
+            if(strcmp(name.c_str(),"mbr")){
+                MBR mbrRep;
+                fseek(archivo, 0, SEEK_SET);
+                fread(&mbrRep, sizeof (MBR), 1, archivo);
+                fclose(archivo);
+
+                string dot;
+                dot+="digraph D{";
+                dot+="label=\"REPORTE MBR\"";
+                dot+="nodo_mbr[shape=platntext label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n";
+                dot+="<TR><TD align=\"left\" color=\"white\" bgcolor=\"darkslateblue\">REPORTE DE MBR</TD><TD color=\"white\" bgcolor=\"darkslateblue\"></TD></TR>\n";
+                dot+="<TR><TD>mbr_tamano</TD><TD>";
+                dot+=to_string(mbrRep.mbr_tamano);
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">mbr_fecha_creacion</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=to_string(mbrRep.mbr_fecha_creacion);
+                dot+="</TD></TR>\n<TR><TD>mbr_disk_signature</TD><TD>";
+                dot+=to_string(mbrRep.mbr_dsk_signature);
+                dot+="</TD></TR>\n";
+                
+                partitiond particiones[4];
+                particiones[0] = mbrRep.mbr_partition_1;
+                particiones[1] = mbrRep.mbr_partition_2;
+                particiones[2] = mbrRep.mbr_partition_3;
+                particiones[3] = mbrRep.mbr_partition_4;
+
+                for (int i = 0; i < 4; i++) {
+                    if(particiones[i].part_s!=0){
+                        
+                        dot+="<TR><TD align=\"left\" color=\"white\" bgcolor=\"darkslateblue\">PARTICION</TD><TD color=\"white\" bgcolor=\"darkslateblue\"></TD>";
+                        dot+="</TR>\n<TR><TD>part_status</TD><TD>";
+                        dot+=particiones[i].part_status;
+                        dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">part_type</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                        dot+=particiones[i].part_type;
+                        dot+="</TD></TR>\n<TR><TD>part_fit </TD><TD>";
+                        dot+=particiones[i].part_fit;
+                        dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">part_start</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                        dot+=to_string(particiones[i].part_start);
+                        dot+="</TD></TR>\n<TR><TD>part_size </TD><TD>";
+                        dot+=to_string(particiones[i].part_s);
+                        dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">part_name</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                        dot+=particiones[i].part_name;
+                        dot+="</TD></TR>\n";
+                        if(particiones[i].part_type=='e'){
+                            int inicioE = particiones[i].part_start;
+
+                            FILE *f;
+                            if ((f = fopen(particion.mnt_ruta, "r+b")) == NULL) {
+                                
+                                    cout<<"Error: no se ha podido al abrir el disco!\n";
+                                
+                            }else{
+                                EBR ebrRep;
+                                MBR m;
+                                cout<<"Inicio: "<<inicioE<<endl;
+
+                                fseek(f, inicioE, SEEK_SET);
+                                fread(&ebrRep, sizeof (EBR), 1, f);
+                                
+                                cout<<"si"<<endl;
+                                cout<<"fit: "<<ebrRep.part_fit<<endl;
+                                string B="b",F="f",W="w",fit=to_string(ebrRep.part_fit);
+                                if (ebrRep.part_fit=='b' || strcmp( fit.c_str(), F.c_str())==0 || strcmp( fit.c_str(), W.c_str())==0) {
+                                    cout<<"si?"<<endl;
+                                    int siguiente=ebrRep.part_next;
+                                    while(siguiente!=-1){
+                                        dot+="<TR><TD align=\"left\" color=\"white\" bgcolor=\"springgreen1\">PARTICION LOGICA</TD><TD color=\"white\" bgcolor=\"springgreen1\"></TD>";
+                                        dot+="</TR>\n<TR><TD>part_status</TD><TD>";
+                                        dot+=to_string(ebrRep.part_status);
+                                        dot+="</TD></TR>\n<TR><TD color=\"white\" bgcolor=\"springgreen1\">part_next</TD><TD color=\"white\" bgcolor=\"springgreen1\">";
+                                        dot+=to_string(ebrRep.part_next);
+                                        dot+="</TD></TR>\n<TR><TD>part_fit</TD><TD>";
+                                        dot+=ebrRep.part_fit;
+                                        dot+="</TD></TR>\n<TR><TD color=\"white\" bgcolor=\"springgreen1\">part_start</TD><TD color=\"white\" bgcolor=\"springgreen1\">";
+                                        dot+=to_string(ebrRep.part_start);
+                                        dot+="</TD></TR>\n<TR><TD>part_size</TD><TD>";
+                                        dot+=to_string(ebrRep.part_s);
+                                        dot+="</TD></TR>\n<TR><TD color=\"white\" bgcolor=\"springgreen1\">part_name</TD><TD color=\"white\" bgcolor=\"springgreen1\">";
+                                        dot+=ebrRep.part_name;
+                                        dot+="</TD></TR>";
+                                        fseek(f, siguiente, SEEK_SET);
+                                        fread(&ebrRep, sizeof (EBR), 1, f); 
+                                        siguiente=ebrRep.part_next;
+                                    }
+                                    dot+="<TR><TD align=\"left\" color=\"white\" bgcolor=\"springgreen1\">PARTICION LOGICA</TD><TD color=\"white\" bgcolor=\"springgreen1\"></TD>";
+                                    dot+="</TR>\n<TR><TD>part_status</TD><TD>";
+                                    dot+=to_string(ebrRep.part_status);
+                                    dot+="</TD></TR>\n<TR><TD color=\"white\" bgcolor=\"springgreen1\">part_next</TD><TD color=\"white\" bgcolor=\"springgreen1\">";
+                                    dot+=to_string(ebrRep.part_next);
+                                    dot+="</TD></TR>\n<TR><TD>part_fit</TD><TD>";
+                                    dot+=ebrRep.part_fit;
+                                    dot+="</TD></TR>\n<TR><TD color=\"white\" bgcolor=\"springgreen1\">part_start</TD><TD color=\"white\" bgcolor=\"springgreen1\">";
+                                    dot+=to_string(ebrRep.part_start);
+                                    dot+="</TD></TR>\n<TR><TD>part_size</TD><TD>";
+                                    dot+=to_string(ebrRep.part_s);
+                                    dot+="</TD></TR>\n<TR><TD color=\"white\" bgcolor=\"springgreen1\">part_name</TD><TD color=\"white\" bgcolor=\"springgreen1\">";
+                                    dot+=ebrRep.part_name;
+                                    dot+="</TD></TR>";
+                                }
+                                fclose(f);
+                            }                                
+                        }
+                    }
+                }
+                dot+="</TABLE>>];";
+                dot+="}";
+                cout<<dot<<endl;
+
+            }else if(name=="disk"){
+
+            }else if(name=="inode"){
+                superBloque super;
+                
+                fseek(archivo, sizeof(MBR), SEEK_SET);
+                fread(&super, sizeof (superBloque), 1, archivo);
+                
+                int nInodos=super.s_free_inodes_count;
+                inodo tablaInodo[nInodos];
+
+                fseek(archivo, super.s_inode_start, SEEK_SET);
+                fread(&tablaInodo, nInodos*sizeof(inodo), 1, archivo);
+
+                fclose(archivo);
+
+                string dot="";
+                dot+="digraph D{\n";
+                dot+="label=\"REPORTE INODE\"\n node[shape=platntext]\n";
+                int anterior=-1;
+                for(int i=0;i<nInodos;i++){
+                    if(tablaInodo[i].i_gid!=0){
+                        if(anterior!=-1)
+                            dot+="Inodo"+to_string(anterior)+"->Inodo"+to_string(i);
+                        dot+="Inodo"+to_string(i)+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                        dot+="<TR><TD>INODO</TD><TD>"+to_string(i)+"</TD></TR>\n";
+                        dot+="<TR><TD>i_uid</TD><TD>"+to_string(tablaInodo[i].i_uid)+"</TD></TR>\n";
+                        dot+="<TR><TD>i_gid</TD><TD>"+to_string(tablaInodo[i].i_gid)+"</TD></TR>\n";
+                        dot+="<TR><TD>i_size</TD><TD>"+to_string(tablaInodo[i].i_size)+"</TD></TR>\n";
+                        char fecha[80];
+                        strcpy(fecha,tablaInodo[i].i_atime);
+                        string fechaA=fecha;
+                        dot+="<TR><TD>i_atime</TD><TD>"+fechaA+"</TD></TR>\n";
+                        for(int j=0;j<16;j++){
+                            dot+="<TR><TD>i_block_"+to_string(j)+"</TD><TD>"+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
+                        }
+                        dot+="<TR><TD>i_perm</TD><TD>"+to_string(tablaInodo[i].i_perm)+"</TD></TR>\n";
+                        dot+="</TABLE>>];";
+                        anterior=i;
+                    }
+                }
+                dot+="}";
+
+            }else if(name=="journaling"){
+                
+            }else if(name=="block"){
+                superBloque super;
+                
+                fseek(archivo, sizeof(MBR), SEEK_SET);
+                fread(&super, sizeof (superBloque), 1, archivo);
+                
+                int nInodos=super.s_free_inodes_count;
+                inodo tablaInodo[nInodos];
+
+                fseek(archivo, super.s_inode_start, SEEK_SET);
+                fread(&tablaInodo, nInodos*sizeof(inodo), 1, archivo);
+
+                
+
+                string dot="";
+                dot+="digraph D{\n";
+                dot+="label=\"REPORTE INODE\"\n node[shape=platntext]\n";
+                int anterior=-1;
+                bloqueApuntadores apuntadoresB,apuntadoresB1,apuntadoresB2;
+                bloqueArchivos archivoB;
+                bloqueCarpetas carpetaB;
+
+                for(int i=0;i<nInodos;i++){
+                    if(tablaInodo[i].i_gid!=0){
+
+                        if(anterior!=-1){
+
+                            for(int j=0;j<16;j++){
+
+                                if(tablaInodo[i].i_block[j]!=-1){
+                                    if(j==13){
+                                        fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
+                                        fread(&apuntadoresB, 64, 1, archivo);
+                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                        dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                        dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
+                                        string contenido="";
+                                        for(int x=0;x<15;x++){
+                                            contenido+=to_string(apuntadoresB.b_pointers[x])+", ";
+                                        }
+                                        contenido+=to_string(apuntadoresB.b_pointers[15]);
+                                        dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                        dot+="</TABLE>>];";
+                                        anterior=tablaInodo[i].i_block[j];
+                                        for(int a=0;a<16;a++){
+                                            if(apuntadoresB.b_pointers[a]=!-1){
+                                                if(tablaInodo[i].i_type==0){
+                                                    fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
+                                                    fread(&carpetaB, 64, 1, archivo);
+                                                    
+
+                        
+                                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                    dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                    dot+="<TR><TD>BLOQUE CARPETA</TD><TD>"+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
+                                                    dot+="<TR><TD>b_name</TD><TD>b_inodo</TD></TR>\n";
+                                                    for(int x=0;x<4;x++){
+                                                        if(carpetaB.b_content[x].b_inodo!=-1){
+                                                            string name_B_C=carpetaB.b_content[x].b_name;
+                                                            dot+="<TR><TD>"+name_B_C+"</TD><TD>"+to_string(carpetaB.b_content[x].b_inodo)+"</TD></TR>\n";
+                                                        }
+                                                    }
+                                                    dot+="</TABLE>>];";
+                                                    
+                                                    anterior=apuntadoresB.b_pointers[a];
+                                                    continue;
+                                                }
+                                                fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
+                                                fread(&archivoB, 64, 1, archivo);
+                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                dot+="<TR><TD>BLOQUE ARCHIVO "+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
+                                                string contenido=archivoB.b_content;
+                                                dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                                dot+="</TABLE>>];";
+                                                anterior=apuntadoresB.b_pointers[a];
+                                            }
+
+                                        }
+
+                                        continue;
+                                    }else if(j==14){
+                                        fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
+                                        fread(&apuntadoresB1, 64, 1, archivo);
+                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                        dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                        dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
+                                        string contenido="";
+                                        for(int x=0;x<15;x++){
+                                            contenido+=to_string(apuntadoresB1.b_pointers[x])+", ";
+                                        }
+                                        contenido+=to_string(apuntadoresB1.b_pointers[15]);
+                                        dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                        dot+="</TABLE>>];";
+                                        anterior=tablaInodo[i].i_block[j];                                                
+
+                                        
+                                        for(int b=0;b<16;b++){
+                                            if(apuntadoresB1.b_pointers[b]=!-1){
+                                                fseek(archivo, super.s_block_start+apuntadoresB1.b_pointers[b]*64, SEEK_SET);
+                                                fread(&apuntadoresB, 64, 1, archivo);
+
+                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB1.b_pointers[b]);
+                                                dot+="Bloque"+to_string(apuntadoresB1.b_pointers[b])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(apuntadoresB1.b_pointers[b])+"</TD></TR>\n";
+                                                string contenido="";
+                                                for(int x=0;x<15;x++){
+                                                    contenido+=to_string(apuntadoresB.b_pointers[x])+", ";
+                                                }
+                                                contenido+=to_string(apuntadoresB.b_pointers[15]);
+                                                dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                                dot+="</TABLE>>];";
+                                                anterior=apuntadoresB1.b_pointers[b];
+
+                                                for(int a=0;a<16;a++){
+                                                    if(apuntadoresB.b_pointers[a]=!-1){
+                                                        if(tablaInodo[i].i_type==0){
+                                                            fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
+                                                            fread(&carpetaB, 64, 1, archivo);
+                                                            
+                                                            dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                            dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                            dot+="<TR><TD>BLOQUE CARPETA</TD><TD>"+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
+                                                            dot+="<TR><TD>b_name</TD><TD>b_inodo</TD></TR>\n";
+                                                            for(int x=0;x<4;x++){
+                                                                if(carpetaB.b_content[x].b_inodo!=-1){
+                                                                    string name_B_C=carpetaB.b_content[x].b_name;
+                                                                    dot+="<TR><TD>"+name_B_C+"</TD><TD>"+to_string(carpetaB.b_content[x].b_inodo)+"</TD></TR>\n";
+                                                                }
+                                                            }
+                                                            dot+="</TABLE>>];";
+                                                            
+                                                            anterior=apuntadoresB.b_pointers[a];
+                                                            continue;
+                                                        }
+                                                        fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
+                                                        fread(&archivoB, 64, 1, archivo);
+                                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                        dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                        dot+="<TR><TD>BLOQUE ARCHIVO "+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
+                                                        string contenido=archivoB.b_content;
+                                                        dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                                        dot+="</TABLE>>];";
+                                                        anterior=apuntadoresB.b_pointers[a];
+                                                    }
+
+                                                }
+                                                
+                                            }
+                                        }
+
+                                        continue;
+                                    }else if(j==15){
+                                        fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
+                                        fread(&apuntadoresB2, 64, 1, archivo);
+                                        
+                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                        dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                        dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
+                                        string contenido="";
+                                        for(int x=0;x<15;x++){
+                                            contenido+=to_string(apuntadoresB2.b_pointers[x])+", ";
+                                        }
+                                        contenido+=to_string(apuntadoresB2.b_pointers[15]);
+                                        dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                        dot+="</TABLE>>];";
+                                        anterior=tablaInodo[i].i_block[j];                                                
+
+                                        for(int c=0;c<16;c++){
+                                            if(apuntadoresB2.b_pointers[c]=!-1){
+                                                fseek(archivo, super.s_block_start+apuntadoresB2.b_pointers[c]*64, SEEK_SET);
+                                                fread(&apuntadoresB1, 64, 1, archivo);
+                                                
+                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB2.b_pointers[c]);
+                                                dot+="Bloque"+to_string(apuntadoresB2.b_pointers[c])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(apuntadoresB2.b_pointers[c])+"</TD></TR>\n";
+                                                string contenido="";
+                                                for(int x=0;x<15;x++){
+                                                    contenido+=to_string(apuntadoresB1.b_pointers[x])+", ";
+                                                }
+                                                contenido+=to_string(apuntadoresB1.b_pointers[15]);
+                                                dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                                dot+="</TABLE>>];";
+                                                anterior=apuntadoresB2.b_pointers[c];
+
+
+
+                                                for(int b=0;b<16;b++){
+                                                    if(apuntadoresB1.b_pointers[b]=!-1){
+                                                        fseek(archivo, super.s_block_start+apuntadoresB1.b_pointers[b]*64, SEEK_SET);
+                                                        fread(&apuntadoresB, 64, 1, archivo);
+                                                        
+                                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB1.b_pointers[c]);
+                                                        dot+="Bloque"+to_string(apuntadoresB1.b_pointers[b])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                        dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(apuntadoresB1.b_pointers[c])+"</TD></TR>\n";
+                                                        string contenido="";
+                                                        for(int x=0;x<15;x++){
+                                                            contenido+=to_string(apuntadoresB.b_pointers[x])+", ";
+                                                        }
+                                                        contenido+=to_string(apuntadoresB.b_pointers[15]);
+                                                        dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                                        dot+="</TABLE>>];";
+                                                        anterior=apuntadoresB1.b_pointers[c];
+                                                        
+
+
+                                                        for(int a=0;a<16;a++){
+                                                            if(apuntadoresB.b_pointers[a]=!-1){
+                                                                if(tablaInodo[i].i_type==0){
+                                                                    fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
+                                                                    fread(&carpetaB, 64, 1, archivo);
+                                                                    
+                                                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                                    dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                                    dot+="<TR><TD>BLOQUE CARPETA</TD><TD>"+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
+                                                                    dot+="<TR><TD>b_name</TD><TD>b_inodo</TD></TR>\n";
+                                                                    for(int x=0;x<4;x++){
+                                                                        if(carpetaB.b_content[x].b_inodo!=-1){
+                                                                            string name_B_C=carpetaB.b_content[x].b_name;
+                                                                            dot+="<TR><TD>"+name_B_C+"</TD><TD>"+to_string(carpetaB.b_content[x].b_inodo)+"</TD></TR>\n";
+                                                                        }
+                                                                    }
+                                                                    dot+="</TABLE>>];";
+                                                                    
+                                                                    anterior=apuntadoresB.b_pointers[a];
+                                                                    continue;
+                                                                }
+                                                                fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
+                                                                fread(&archivoB, 64, 1, archivo);
+                                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                                dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                                                dot+="<TR><TD>BLOQUE ARCHIVO "+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
+                                                                string contenido=archivoB.b_content;
+                                                                dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                                                dot+="</TABLE>>];";
+                                                                anterior=apuntadoresB.b_pointers[a];
+                                                            }
+
+                                                        }
+                                                        continue;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        continue;
+                                    }
+                                    if(tablaInodo[i].i_type==0){
+                                        fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
+                                        fread(&carpetaB, 64, 1, archivo);
+                                        
+                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                        dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                        dot+="<TR><TD>BLOQUE CARPETA</TD><TD>"+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
+                                        dot+="<TR><TD>b_name</TD><TD>b_inodo</TD></TR>\n";
+                                        for(int x=0;x<4;x++){
+                                            if(carpetaB.b_content[x].b_inodo!=-1){
+                                                string name_B_C=carpetaB.b_content[x].b_name;
+                                                dot+="<TR><TD>"+name_B_C+"</TD><TD>"+to_string(carpetaB.b_content[x].b_inodo)+"</TD></TR>\n";
+                                            }
+                                        }
+                                        dot+="</TABLE>>];";
+                                        
+                                        anterior=tablaInodo[i].i_block[j];
+                                        continue;
+                                    }
+                                    fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
+                                    fread(&archivoB, 64, 1, archivo);
+                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                    dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
+                                    dot+="<TR><TD>BLOQUE ARCHIVO "+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
+                                    string contenido=archivoB.b_content;
+                                    dot+="<TR><TD>"+contenido+"</TD></TR>\n";
+                                    dot+="</TABLE>>];";
+                                    anterior=tablaInodo[i].i_block[j];
+                                }
+                                
+                            }
+                            
+                        }
+                        
+                    }
+                }
+                dot+="}";
+                fclose(archivo);
+            }else if(strcmp(name.c_str(),"bm_inode")==0){
+                
+                fseek(archivo, inicio, SEEK_SET);
+                fread(&sb, sizeof (superBloque), 1, archivo);
+                int inodoCount=sb.s_inodes_count;
+                char bitmap[inodoCount];
+                fseek(archivo, sb.s_bm_inode_start, SEEK_SET);
+                fread(&bitmap, inodoCount, 1, archivo);
+                fclose(archivo);
+                string contenido;
+                for(int i=0;i<inodoCount;i++){
+                    if(i%20==0){
+                        contenido+="\n";    
+                    }
+                    contenido+=bitmap[i];
+                    contenido+="   ";
+                }
+                //cout<<"INICIO: "<<contenido<<endl;
+                archivo = fopen(path.c_str(), "w+");
+                if (archivo){
+                    fwrite(contenido.c_str(), 1, contenido.size(), archivo);
+                    cout << "Done Writing!" << endl;
+                }
+
+                fclose(archivo);
+                
+            }else if(name=="bm_block"){
+                fseek(archivo, inicio, SEEK_SET);
+                fread(&sb, sizeof (superBloque), 1, archivo);
+                int inodoCount=sb.s_blocks_count;
+                char bitmapB[inodoCount];
+                fseek(archivo, sb.s_bm_block_start, SEEK_SET);
+                fread(&bitmapB, inodoCount, 1, archivo);
+                fclose(archivo);
+
+                string contenido;
+                //cout<<"INICIO: "<<bitmapB[inodoCount]<<endl;
+                //cout<<"posicion: "<<sb.s_bm_block_start<<endl;
+                for(int i=0;i<inodoCount;i++){
+                    
+                    if(i%20==0){
+                        contenido+="\n";    
+                    }
+                    contenido+=bitmapB[i];
+                    contenido+="   ";
+                }
+                cout<<"cantidad "<<inodoCount<<endl;
+                cout<<contenido<<endl;
+
+                archivo = fopen(path.c_str(), "w+");
+                if (archivo){
+                    fwrite(contenido.c_str(), 1, contenido.size(), archivo);
+                    cout << "Done Writing!" << endl;
+                }
+                fclose(archivo);
+            }else if(name=="tree"){
+
+            }else if(name=="sb"){
+                fseek(archivo, inicio, SEEK_SET);
+                fread(&sb, sizeof (superBloque), 1, archivo);
+                fclose(archivo);
+
+                string dot;
+                dot+="digraph D{";
+                dot+="label=\"REPORTE SUPER BLOQUE";
+                dot+=name;
+                dot+="\";";
+                dot+="nodo_super_bloque[shape=record label=\"{REPORTE SUPER BLOQUE|";
+                dot+="{|";
+                dot+="}";
+            }else if(name=="file"){
+
+            }else if(name=="ls"){
+
+            }else{
+                fclose(archivo);
+                cout<<"ERROR: NOMBRE DE REPORTE INVALIDO"<<endl;
+                return;
+            }
+        }else{
+            cout<<"ERROR: SIN REGISTROS DE ID INGRESADO"<<endl;
+        }
+    }
+}
+
+
+
