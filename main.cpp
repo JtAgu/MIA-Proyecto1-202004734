@@ -5,6 +5,7 @@ int main(){
     Analizador analisis;
     inicializarListaMount();
     string entradacmd = "";
+    cout<<sizeof(inodo)<<endl;
     while(entradacmd != "exit"){
         cout<<""<<endl;
         cout << "*----------------------------------------------------------*" << endl;

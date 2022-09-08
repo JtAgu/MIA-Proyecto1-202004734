@@ -187,6 +187,8 @@ class Comando{
         void LogIn(string usr,string pass,string id);
         void mkgrp(string name);
         void mkusr(string usr,string grp,string pass);
+        void chmod(string path,string ugo,string r);
+        void mkfile(string path,string r,string s,string cont);
 
         void rep(string name,string path,string id,string ruta);
 };
@@ -203,6 +205,15 @@ typedef struct{
     char name[10];
     vector <UserLog> usuarios;
 }GrupoUser;
+
+string replace_txt(string str, const string& from, const string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+    return str;
+}
 
 
 void cFdisk_add(string unit, string path, string name, string add);
@@ -239,9 +250,15 @@ int crearBloque(int tipo,string escribir,FILE* archivo);
 int BuscarInodo(string name,int pos,FILE* archivo);
 int recorrerCarpeta(string name,int pos,FILE* archivo);
 void escribirFile(int posAct,inodo InodeUsers,string nCont);
+int crearInodo(char tipo,string name,int size,FILE* archivo);
 
 void actualizar_bmInodo(int n);
 void actualizar_bmBlock(int n);
+bool VerificarPermisoLeer(inodo Inodo);
+bool VerificarPermisoEjecutar(inodo Inodo);
+bool VerificarPermisoEscribir(inodo Inodo);
+void ActualizarPermCascada(int pos,FILE* archivo,int permiso);
+void PermisoCarpeta(int pos,FILE* archivo,int permiso);
 
 #endif // COMANDO_H
 

@@ -28,7 +28,7 @@ void Analizador::analizar(string entrada){
     }
     string entradacmd = entrada;
     // Transformacion de toda la entrada a minusculas
-    transform(entradacmd.begin(), entradacmd.end(), entradacmd.begin(), ::tolower);
+    //transform(entradacmd.begin(), entradacmd.end(), entradacmd.begin(), ::tolower);
     vector<string> cmdentrada = split_txt(entradacmd);
     vector<string> parametros;
     string comando = "";
@@ -39,6 +39,7 @@ void Analizador::analizar(string entrada){
             parametros.push_back(cmdentrada.at(i));
         }
     }
+    transform(comando.begin(), comando.end(), comando.begin(), ::tolower);
     // Identificacion de comando, parametros y ejecucion
     identificarParametros(comando, parametros);
 }
@@ -58,10 +59,12 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-f->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.f = param;
+                transform(cmd.param.f.begin(), cmd.param.f.end(), cmd.param.f.begin(), ::tolower);
             }else if(param.find("-u->") == 0){
                 param = replace_txt(param, "-u->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.u = param;
+                transform(cmd.param.u.begin(), cmd.param.u.end(), cmd.param.u.begin(), ::tolower);
             }else if(param.find("-path->") == 0){
                 param = replace_txt(param, "-path->", "");
                 param = replace_txt(param, "\"", "");
@@ -109,10 +112,12 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-t->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.t = param;
+                transform(cmd.param.t.begin(), cmd.param.t.end(), cmd.param.t.begin(), ::tolower);
             }else if(param.find("-u->") == 0){
                 param = replace_txt(param, "-u->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.u = param;
+                transform(cmd.param.u.begin(), cmd.param.u.end(), cmd.param.u.begin(), ::tolower);
             }else if(param.find("-path->") == 0){
                 param = replace_txt(param, "-path->", "");
                 param = replace_txt(param, "\"", "");
@@ -121,10 +126,12 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-f->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.f = param;
+                transform(cmd.param.f.begin(), cmd.param.f.end(), cmd.param.f.begin(), ::tolower);
             }else if(param.find("-delete->") == 0){
                 param = replace_txt(param, "-delete->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.delete_ = param;
+                transform(cmd.param.delete_.begin(), cmd.param.delete_.end(), cmd.param.delete_.begin(), ::tolower);
             } else if(param.find("-name->") == 0){
                 param = replace_txt(param, "-name->", "");
                 param = replace_txt(param, "\"", "");
@@ -202,10 +209,12 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-type->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.type = param;
+                transform(cmd.param.type.begin(), cmd.param.type.end(), cmd.param.type.begin(), ::tolower);
             } else if(param.find("-fs->") == 0){
                 param = replace_txt(param, "-fs->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.fs = param;
+                transform(cmd.param.fs.begin(), cmd.param.fs.end(), cmd.param.fs.begin(), ::tolower);
             }   else {
                 cout << "*PARAMETRO INCORRECTO*" << endl;
             }
@@ -343,10 +352,10 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-ugo->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.ugo = param;
-            }  else if(param.find("-r->") == 0){
-                param = replace_txt(param, "-r->", "");
+            }  else if(param.find("-r") == 0){
+                param = replace_txt(param, "-r", "");
                 param = replace_txt(param, "\"", "");
-                cmd.param.r = param;
+                cmd.param.r = "simon";
             }    else {
                 cout << "*PARAMETRO INCORRECTO*" << endl;
             }
@@ -370,10 +379,11 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-s->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.s = param;
-            }  else if(param.find("-r->") == 0){
-                param = replace_txt(param, "-r->", "");
+            }  else if(param.find("-r") == 0){
+                param = replace_txt(param, "-r", "");
                 param = replace_txt(param, "\"", "");
-                cmd.param.r = param;
+                cmd.param.r = "simon";
+
             } else if(param.find("-cont->") == 0){
                 param = replace_txt(param, "-cont->", "");
                 param = replace_txt(param, "\"", "");
@@ -481,10 +491,10 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-path->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.path = param;
-            }else if(param.find("-p->") == 0){
-                param = replace_txt(param, "-p->", "");
+            }else if(param.find("-p") == 0){
+                param = replace_txt(param, "-p", "");
                 param = replace_txt(param, "\"", "");
-                cmd.param.p = param;
+                cmd.param.p = "simon";
             }    else {
                 cout << "*PARAMETRO INCORRECTO*" << endl;
             }
@@ -664,19 +674,24 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
         for (int i = 0; i < parametros.size(); i++)
         {
             param = parametros.at(i);
-            if (param.find("-path=") == 0)
+            if (param.find("-path->") == 0)
             {
-                param = replace_txt(param, "-path=", "");
+                param = replace_txt(param, "-path->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.path = param;
-
+                
                 ifstream archivo(param);
                 string linea = "";
                 // Obtener línea de archivo, y almacenar contenido en "linea"
                 while (getline(archivo, linea))
                 {
+                    cout<<""<<endl;
+                    cout << "*----------------------------------------------------------*" << endl;
+                    cout << "*                    [MIA] PROYECTO1                       *" << endl;
+                    cout << "*               JUSTIN AGUIRRE - 202004734                 *" << endl;
+                    cout << "*----------------------------------------------------------*" << endl;
                     // Lo vamos imprimiendo
-                    cout<<"EJECUTANDO:\t"<<linea<<endl;
+                    cout<<"EJECUTANDO:\t\n"<<linea<<endl;
                     analizar(linea);
                     
                 }
@@ -693,7 +708,9 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
         cmd.param.Comando = "rep";
 
         for(int i=0; i<parametros.size(); i++){
+
             param = parametros.at(i);
+            //cout<<parametros.at(i)<<endl;
             if(param.find("-id->") == 0){
                 param = replace_txt(param, "-id->", "");
                 param = replace_txt(param, "\"", "");
@@ -706,6 +723,7 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-name->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.name = param;
+                cout<<"estare vivo? "<<param<<endl;
             }  else if(param.find("-ruta->") == 0){
                 param = replace_txt(param, "-ruta->", "");
                 param = replace_txt(param, "\"", "");
