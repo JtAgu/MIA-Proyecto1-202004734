@@ -19,7 +19,7 @@ fdisk -add->-200 -s->10 -u->K -path->/home/justin/MisDiscos/Disco1.dsk -name->Pa
 
 
 fdisk -name->Particion5 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
-fdisk -name->Particion4 -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
+fdisk -name->xd -delete->full -path->/home/justin/MisDiscos/Disco1.dsk
 
 
 mount -path->/home/justin/MisDiscos/Disco1.dsk -name->Particion1

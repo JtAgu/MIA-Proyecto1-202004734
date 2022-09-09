@@ -100,14 +100,14 @@ typedef struct{
 }superBloque;
 
 typedef struct{
-    int i_uid;     //UID del usuario propietario del archivo o carpeta
-    int i_gid;      //GID al grupo al que pertenece
-    int i_size;     //tamaño del archivo en bytes
-    times i_atime;  //ultima fecha que se leyó el inodo sin modificarlo
-    times i_ctime;  //fecha en la que se creó el inodo
-    times i_mtime;  //ultima fecha en la que se modifico el inodo
-    int i_block[15];//arreglo de punteros, los prieros 12 son directos, 13 indirecto, 14 indirecto doble, 15 indirecto triple (-1 si no se usan)
-    char i_type;    //1 = archivo, 0 = carpeta
+    int i_uid;     //UID DEL USR PROPIETARIO
+    int i_gid;      //GID DEL GRUPO DEL PROP
+    int i_size;     //TAMAÑO EN BYTES(SOLO EN FILES)
+    times i_atime;  //FECHA SIN MODIFICAR
+    times i_ctime;  //FECHA CREACION
+    times i_mtime;  //ULTIMA FECHA MODIFICACION
+    int i_block[15];//ENLACES A BLOQUES 12 DIRECT, 13 INDIRECT, 14 DOBLE INDIRECT, 15 TRIPLE INDIRECT (-1 IF NOT USE)
+    char i_type;    //1 = FILE, 0 = DIR
     int i_perm;
 }inodo;
 
@@ -189,6 +189,8 @@ class Comando{
         void mkusr(string usr,string grp,string pass);
         void chmod(string path,string ugo,string r);
         void mkfile(string path,string r,string s,string cont);
+        void remove(string pathBuscar);
+        void mkdir(string path,string padres);
 
         void rep(string name,string path,string id,string ruta);
 };
@@ -260,6 +262,12 @@ bool VerificarPermisoEscribir(inodo Inodo);
 void ActualizarPermCascada(int pos,FILE* archivo,int permiso);
 void PermisoCarpeta(int pos,FILE* archivo,int permiso);
 
+void escribirDOT(string dot,string terminacion,string ruta);
+string  TreeCarpeta(int pos,FILE* archivo,int num);
+string TreeCascada(int pos,FILE* archivo,int num);
+
+void RemoveCascada(int pos,FILE* archivo,vector <int> listaInode);
+void RemoveCarpeta(int pos,FILE* archivo,vector <int> listaInode);
 #endif // COMANDO_H
 
 

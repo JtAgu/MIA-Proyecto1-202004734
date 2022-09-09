@@ -25,6 +25,10 @@ void Analizador::analizar(string entrada){
     if(entrada=="exit"){
         TerminarMontado();
         return;
+    }else if(entrada=="pause"){
+        cout<<"EJECUCION PAUSADA, PRESIONE ENTER PARA CONTINUAR..."<<endl;
+        string pause;
+        getline(cin,pause);
     }
     string entradacmd = entrada;
     // Transformacion de toda la entrada a minusculas
@@ -626,8 +630,6 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
         }
     } else if(comando == "pause"){
        
-            cmd.identificacionCMD(cmd.param);
-       
     }  else if(comando == "recovery"){
         cmd.param.Comando = "recovery";
 
@@ -699,7 +701,7 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
             }
             else
             {
-
+                
             }
         }
         // Ejecucion de metodo
@@ -723,7 +725,7 @@ void Analizador::identificarParametros(string comando, vector<string> parametros
                 param = replace_txt(param, "-name->", "");
                 param = replace_txt(param, "\"", "");
                 cmd.param.name = param;
-                cout<<"estare vivo? "<<param<<endl;
+                //cout<<"estare vivo? "<<param<<endl;
             }  else if(param.find("-ruta->") == 0){
                 param = replace_txt(param, "-ruta->", "");
                 param = replace_txt(param, "\"", "");

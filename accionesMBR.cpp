@@ -29,6 +29,10 @@ void actualizarMBR(MBR nuevo, string ruta) {
     
     bool principal=true;
     FILE *f;
+    cout<<nuevo.mbr_partition_1.part_s<<endl;
+    cout<<nuevo.mbr_partition_2.part_s<<endl;
+    cout<<nuevo.mbr_partition_3.part_s<<endl;
+    cout<<nuevo.mbr_partition_4.part_s<<endl;
     if ((f = fopen(ruta.c_str(), "r+b")) == NULL) {
         principal= false;
     } else {
