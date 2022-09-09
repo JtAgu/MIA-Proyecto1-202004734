@@ -85,7 +85,7 @@ typedef struct{
     int s_blocks_count;
     int s_free_blocks_count;
     int s_free_inodes_count;
-    
+
     times s_mtime;
     times s_umtime;
     int s_mnt_count;
@@ -192,7 +192,7 @@ class Comando{
         void mkfile(string path,string r,string s,string cont);
         void remove(string pathBuscar);
         void mkdir(string path,string padres);
-
+        void renameC(string path,string name);
         void rep(string name,string path,string id,string ruta);
 };
 
@@ -269,6 +269,9 @@ string TreeCascada(int pos,FILE* archivo,int num);
 
 void RemoveCascada(int pos,FILE* archivo,vector <int> listaInode);
 void RemoveCarpeta(int pos,FILE* archivo,vector <int> listaInode);
+
+void BuscarBloqueRename(int pos,FILE* archivo,string nameanterior,string nameNuevo);
+void Rename(int pos,FILE* archivo,string name,string cambio);
 #endif // COMANDO_H
 
 

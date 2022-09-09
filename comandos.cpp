@@ -199,6 +199,12 @@ void Comando::identificacionCMD(Parametros p)
         }else{
             cout<<"ERROR:  NO HAY NINGUN USUARIO LOGEADO!"<<endl;
         }
+    }else if (p.Comando=="rename"){
+        if(logeado.Id>0){
+            renameC(p.path,p.name);
+        }else{
+            cout<<"ERROR:  NO HAY NINGUN USUARIO LOGEADO!"<<endl;
+        }
     }else if (p.Comando=="puase"){
         
     }else if (p.Comando=="mkdir"){
@@ -2816,6 +2822,7 @@ bool VerificarPermisoEjecutar(inodo Inodo){
 }
 
 bool VerificarPermisoEscribir(inodo Inodo){
+    cout<<logeado.name<<endl;
     if(strcmp(logeado.name,"root")==0||logeado.Id==0){
         return true;
     }
@@ -3390,7 +3397,7 @@ void Comando::rep(string name,string path,string id,string rutai){
 
                 string dot="";
                 dot+="digraph D{\n";
-                dot+="label=\"REPORTE BLOCK\"\n node[shape=platntext]\n";
+                dot+="label=\"REPORTE BLOCK\"\n node[shape=platntext]\nrankdir=LR\n";
                 int anterior=0;
                 bloqueApuntadores apuntadoresB,apuntadoresB1,apuntadoresB2;
                 bloqueArchivos archivoB;
@@ -5119,4 +5126,159 @@ string TreeCascada(int pos,FILE* archivo,int num){
         }
     }
     return dot;
+}
+
+
+void Comando::renameC(string path,string name){
+    string delimiter="/";
+    size_t posC;
+    FILE* file=fopen(pathGlobal.c_str(),"r+b");
+    
+    int buscado=0;
+    string regTemp="";
+    inodo Iencontrado;
+    bloqueCarpetas carpetaActual;
+    bloqueApuntadores apuntadorActual;
+    bool creado=false;
+    //separamos el contenido dentro de ruta separandolo por /
+    while ((posC = path.find(delimiter)) != string::npos) {
+        
+        regTemp=(path.substr(0, posC));
+        path.erase(0, posC + delimiter.length());
+        if(posC==0){
+            continue;
+        }
+        //cout<<regTemp<<endl;
+        buscado=BuscarInodo(regTemp,buscado*sizeof(inodo)+superLog.s_inode_start,file);
+        if(buscado<0){
+            cout<<"ERROR: EL PATH ESPECIFICADO NO EXISTE!"<<endl;
+            return;
+        }
+    }
+    cout<<"nombre archivo: "<<path<<endl;
+    //cout<<"empieza buscar en: "<<buscado<<endl;
+    buscado=BuscarInodo(path,buscado*sizeof(inodo)+superLog.s_inode_start,file);
+    if(buscado<0){
+        cout<<"ERROR: EL PATH ESPECIFICADO NO EXISTE!"<<endl;
+        return;
+    }
+
+    BuscarBloqueRename(superLog.s_inode_start,file,path,name);
+    fclose(file);
+
+    
+}
+
+void BuscarBloqueRename(int pos,FILE* archivo,string nameanterior,string nameNuevo){
+    
+    inodo InodoActual;
+    fseek(archivo,pos, SEEK_SET);
+    fread(&InodoActual, sizeof(inodo), 1, archivo);
+    times fech;
+    fechActual(fech);
+    strcpy(InodoActual.i_atime,fech);
+    
+    fseek(archivo,pos, SEEK_SET);
+    fwrite(&InodoActual, sizeof(inodo), 1, archivo);
+
+    fseek(archivo,pos, SEEK_SET);
+    fread(&InodoActual, sizeof(inodo), 1, archivo);
+    
+    if(InodoActual.i_type=='0'){
+        for(int i=0;i<16;i++){
+            //cout<<"PASANDO POR INODO POS: "<<i<<endl;
+            if(InodoActual.i_block[i]>-1){
+                //cout<<"PASE EL IF EN "<<i<<endl;
+                if(i<13){
+                    
+                    Rename(InodoActual.i_block[i]*sizeof(bloqueCarpetas)+superLog.s_block_start,archivo,nameanterior,nameNuevo);
+                    
+                
+                }if(i==13){
+                    bloqueApuntadores apuntadores;
+                    fseek(archivo,InodoActual.i_block[13]*sizeof(bloqueCarpetas)+superLog.s_block_start, SEEK_SET);
+                    fread(&apuntadores, sizeof(bloqueApuntadores), 1, archivo);
+                    for(int j=0;j<16;j++){
+                        if(apuntadores.b_pointers[j]!=-1){
+                            Rename(apuntadores.b_pointers[j]*sizeof(bloqueCarpetas)+superLog.s_block_start,archivo,nameanterior,nameNuevo);
+                        }
+                    } 
+                }if(i==14){
+                    bloqueApuntadores apuntadores,apuntadores2;
+                    fseek(archivo,InodoActual.i_block[14]*sizeof(bloqueCarpetas)+superLog.s_block_start, SEEK_SET);
+                    fread(&apuntadores, sizeof(bloqueApuntadores), 1, archivo);
+                    for(int j=0;j<16;j++){
+                        if(apuntadores.b_pointers[j]!=-1){
+                            fseek(archivo,apuntadores.b_pointers[j]*64+superLog.s_block_start, SEEK_SET);
+                            fread(&apuntadores2, 64, 1, archivo);
+                            for(int k=0;k<16;k++){
+                                if(apuntadores2.b_pointers[k]!=-1){
+                                    Rename(apuntadores2.b_pointers[k]*sizeof(bloqueCarpetas)+superLog.s_block_start,archivo,nameanterior,nameNuevo);
+                                    
+                                }
+                            }
+                        }
+                    }
+                }if(i==15){
+                    bloqueApuntadores apuntadores,apuntadores2,apuntadores3;
+                    fseek(archivo,InodoActual.i_block[15]*sizeof(bloqueCarpetas)+superLog.s_block_start, SEEK_SET);
+                    fread(&apuntadores, sizeof(bloqueApuntadores), 1, archivo);
+                    for(int j=0;j<16;j++){
+                        if(apuntadores.b_pointers[j]!=-1){
+                            fseek(archivo,apuntadores.b_pointers[j]*64+superLog.s_block_start, SEEK_SET);
+                            fread(&apuntadores2, 64, 1, archivo);
+                            for(int k=0;k<16;k++){
+                                if(apuntadores2.b_pointers[k]!=-1){
+                                    fseek(archivo,apuntadores2.b_pointers[k]*sizeof(bloqueCarpetas)+superLog.s_block_start, SEEK_SET);
+                                    fread(&apuntadores3, sizeof(bloqueApuntadores), 1, archivo);
+                                    for(int l=0;l<16;l++){
+                                        if(apuntadores3.b_pointers[l]!=-1){
+                                            Rename(apuntadores3.b_pointers[l]*sizeof(bloqueCarpetas)+superLog.s_block_start,archivo,nameanterior,nameNuevo);
+                                            
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Rename(int pos,FILE* archivo,string name,string cambio){
+    bloqueCarpetas bloque;
+    fseek(archivo,pos, SEEK_SET);
+    fread(&bloque, sizeof(bloqueCarpetas), 1, archivo);
+
+    for(int i=0;i<4;i++){
+        if(bloque.b_content[i].b_inodo>-1){
+            inodo actual;
+            fseek(archivo,bloque.b_content[i].b_inodo*sizeof(inodo)+superLog.s_inode_start, SEEK_SET);
+            fread(&actual, sizeof(inodo), 1, archivo);
+            if(bloque.b_content[i].b_name==name){
+                if(VerificarPermisoEscribir(actual)){
+                    strcpy(bloque.b_content[i].b_name,cambio.c_str());
+                    fseek(archivo,pos, SEEK_SET);
+                    fwrite(&bloque, sizeof(bloqueCarpetas), 1, archivo);
+                    cout<<"ARCHIVO RENOMBRADO"<<endl;
+                    return;
+                }else{
+                    cout<<"NO POSEEE PERMISOS SUFICIENTES PARA RENAME"<<endl;
+                    return;
+                }
+            }
+        }
+    }
+    for(int i=0;i<4;i++){
+        if(bloque.b_content[i].b_inodo>-1){
+            inodo actual;
+            fseek(archivo,bloque.b_content[i].b_inodo*sizeof(inodo)+superLog.s_inode_start, SEEK_SET);
+            fread(&actual, sizeof(inodo), 1, archivo);
+            if(actual.i_type=='0'){
+                BuscarBloqueRename(bloque.b_content[i].b_inodo*sizeof(inodo)+superLog.s_inode_start,archivo,name,cambio);                
+            }
+        }
+    }
 }
