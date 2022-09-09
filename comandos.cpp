@@ -1464,14 +1464,16 @@ mnt_nodo* mntCrearNodo(partitiond particion, EBR logica, string ruta) {
 
 
 
-char numeroDeDisco(mnt_lista*lista, string name) {
+char numeroDeDisco(mnt_lista*lista, string name) {//ESTE METODO NOS DARA EL COMIENZO DEL ID PARA EL DISCO
     mnt_nodo*puntero = lista->cabeza;
+    //INICIALMENTE VALUARA SI ES LA PRIMER PARTICION MONTADA
     char letraTemporal = '1';
     int retorno = 1;
     if (lista->cabeza == NULL) {
         return '1';
     }
     
+
     while (puntero) {
         string namea="";
         for(int i=3;i<16;i++){
@@ -1765,9 +1767,10 @@ void Comando::mkfs(string type,string id,string fs){
     }
     
 }
-
+//AQUI EMPIEZA LO CHIDO
 void crear_ext2(mnt_nodo part,int n,int inicio){
     superBloque super= crearSuper(part,n,inicio,2);
+    
     EscribirSuper(part.mnt_ruta,super,inicio);
     bmBloque bitmapBloques[n*3];
     bmBloque aux;
@@ -1804,7 +1807,7 @@ void crear_ext2(mnt_nodo part,int n,int inicio){
     }
     
     inodo lista[n];
-
+    //LLENAMOS UNA LISRA CON INODOS Y OS LLENAMOS POR DEFECTO
     for (int t = 0; t < n; t++) {
         lista[t].i_uid=0;
         lista[t].i_gid=0;
@@ -1818,7 +1821,7 @@ void crear_ext2(mnt_nodo part,int n,int inicio){
 
         
     }
-    
+    //EDITAMOS LOS PRIMEROS QUE SIEMPRE SERAN IGUAL POR DEFECTO
     lista[0].i_uid=1;
     lista[0].i_gid=1;
     lista[1].i_uid=1;
@@ -1837,12 +1840,13 @@ void crear_ext2(mnt_nodo part,int n,int inicio){
     strcpy(lista[1].i_mtime,fech);
     lista[1].i_type='1';
     lista[1].i_block[0]=1;
-
+//ENVIAMOS A ESCRIBIR AL DISCO CREADO
     EscribirNodo(part.mnt_ruta,super.s_inode_start,n,lista);
     
 
     super.s_firts_ino=super.s_firts_ino+2*sizeof(inodo);
 
+    //REPETIMOS LA CREACION PERO CON BLOQUES
     bloqueCarpetas carpet;
     content contenido;
     contenido.b_inodo=1;
@@ -1897,7 +1901,7 @@ void crear_ext3(mnt_nodo part,int n,int inicio){
     for(int i=2;i<n;i++){
         bitmapInodo[i]=auxI;
     }
-
+    //AHORA ESCRIBIMOS BITMAPS
     EscribirInodoMap(part.mnt_ruta,bitmapInodo,super.s_bm_inode_start,n);
 
 
@@ -3387,7 +3391,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                 string dot="";
                 dot+="digraph D{\n";
                 dot+="label=\"REPORTE BLOCK\"\n node[shape=platntext]\n";
-                int anterior=-1;
+                int anterior=0;
                 bloqueApuntadores apuntadoresB,apuntadoresB1,apuntadoresB2;
                 bloqueArchivos archivoB;
                 bloqueCarpetas carpetaB;
@@ -3403,7 +3407,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                     if(j==13){
                                         fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
                                         fread(&apuntadoresB, 64, 1, archivo);
-                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j])+"\n";
                                         dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                         dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
                                         string contenido="";
@@ -3412,7 +3416,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                         }
                                         contenido+=to_string(apuntadoresB.b_pointers[15]);
                                         dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                        dot+="</TABLE>>];";
+                                        dot+="</TABLE>>];\n";
                                         anterior=tablaInodo[i].i_block[j];
                                         for(int a=0;a<16;a++){
                                             if(apuntadoresB.b_pointers[a]=!-1){
@@ -3422,7 +3426,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                     
 
                         
-                                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a])+"\n";
                                                     dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                     dot+="<TR><TD>BLOQUE CARPETA</TD><TD>"+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
                                                     dot+="<TR><TD>b_name</TD><TD>b_inodo</TD></TR>\n";
@@ -3432,19 +3436,19 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                             dot+="<TR><TD>"+name_B_C+"</TD><TD>"+to_string(carpetaB.b_content[x].b_inodo)+"</TD></TR>\n";
                                                         }
                                                     }
-                                                    dot+="</TABLE>>];";
+                                                    dot+="</TABLE>>];\n";
                                                     
                                                     anterior=apuntadoresB.b_pointers[a];
                                                     continue;
                                                 }
                                                 fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
                                                 fread(&archivoB, 64, 1, archivo);
-                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a])+"\n";
                                                 dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                 dot+="<TR><TD>BLOQUE ARCHIVO "+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
                                                 string contenido=archivoB.b_content;
                                                 dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                                dot+="</TABLE>>];";
+                                                dot+="</TABLE>>];\n";
                                                 anterior=apuntadoresB.b_pointers[a];
                                             }
 
@@ -3454,7 +3458,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                     }else if(j==14){
                                         fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
                                         fread(&apuntadoresB1, 64, 1, archivo);
-                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j])+"\n";
                                         dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                         dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
                                         string contenido="";
@@ -3463,7 +3467,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                         }
                                         contenido+=to_string(apuntadoresB1.b_pointers[15]);
                                         dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                        dot+="</TABLE>>];";
+                                        dot+="</TABLE>>];\n";
                                         anterior=tablaInodo[i].i_block[j];                                                
 
                                         
@@ -3472,7 +3476,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                 fseek(archivo, super.s_block_start+apuntadoresB1.b_pointers[b]*64, SEEK_SET);
                                                 fread(&apuntadoresB, 64, 1, archivo);
 
-                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB1.b_pointers[b]);
+                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB1.b_pointers[b])+"\n";
                                                 dot+="Bloque"+to_string(apuntadoresB1.b_pointers[b])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                 dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(apuntadoresB1.b_pointers[b])+"</TD></TR>\n";
                                                 string contenido="";
@@ -3481,7 +3485,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                 }
                                                 contenido+=to_string(apuntadoresB.b_pointers[15]);
                                                 dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                                dot+="</TABLE>>];";
+                                                dot+="</TABLE>>];\n";
                                                 anterior=apuntadoresB1.b_pointers[b];
 
                                                 for(int a=0;a<16;a++){
@@ -3490,7 +3494,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                             fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
                                                             fread(&carpetaB, 64, 1, archivo);
                                                             
-                                                            dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                            dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a])+"\n";
                                                             dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                             dot+="<TR><TD>BLOQUE CARPETA</TD><TD>"+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
                                                             dot+="<TR><TD>b_name</TD><TD>b_inodo</TD></TR>\n";
@@ -3500,19 +3504,19 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                                     dot+="<TR><TD>"+name_B_C+"</TD><TD>"+to_string(carpetaB.b_content[x].b_inodo)+"</TD></TR>\n";
                                                                 }
                                                             }
-                                                            dot+="</TABLE>>];";
+                                                            dot+="</TABLE>>];\n";
                                                             
                                                             anterior=apuntadoresB.b_pointers[a];
                                                             continue;
                                                         }
                                                         fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
                                                         fread(&archivoB, 64, 1, archivo);
-                                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a])+"\n";
                                                         dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                         dot+="<TR><TD>BLOQUE ARCHIVO "+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
                                                         string contenido=archivoB.b_content;
                                                         dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                                        dot+="</TABLE>>];";
+                                                        dot+="</TABLE>>];\n";
                                                         anterior=apuntadoresB.b_pointers[a];
                                                     }
 
@@ -3526,7 +3530,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                         fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
                                         fread(&apuntadoresB2, 64, 1, archivo);
                                         
-                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j])+"\n";
                                         dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                         dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
                                         string contenido="";
@@ -3535,7 +3539,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                         }
                                         contenido+=to_string(apuntadoresB2.b_pointers[15]);
                                         dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                        dot+="</TABLE>>];";
+                                        dot+="</TABLE>>];\n";
                                         anterior=tablaInodo[i].i_block[j];                                                
 
                                         for(int c=0;c<16;c++){
@@ -3543,7 +3547,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                 fseek(archivo, super.s_block_start+apuntadoresB2.b_pointers[c]*64, SEEK_SET);
                                                 fread(&apuntadoresB1, 64, 1, archivo);
                                                 
-                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB2.b_pointers[c]);
+                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB2.b_pointers[c])+"\n";
                                                 dot+="Bloque"+to_string(apuntadoresB2.b_pointers[c])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                 dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(apuntadoresB2.b_pointers[c])+"</TD></TR>\n";
                                                 string contenido="";
@@ -3552,7 +3556,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                 }
                                                 contenido+=to_string(apuntadoresB1.b_pointers[15]);
                                                 dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                                dot+="</TABLE>>];";
+                                                dot+="</TABLE>>];\n";
                                                 anterior=apuntadoresB2.b_pointers[c];
 
 
@@ -3562,7 +3566,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                         fseek(archivo, super.s_block_start+apuntadoresB1.b_pointers[b]*64, SEEK_SET);
                                                         fread(&apuntadoresB, 64, 1, archivo);
                                                         
-                                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB1.b_pointers[c]);
+                                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB1.b_pointers[c])+"\n";
                                                         dot+="Bloque"+to_string(apuntadoresB1.b_pointers[b])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                         dot+="<TR><TD>BLOQUE APUNTADORES "+to_string(apuntadoresB1.b_pointers[c])+"</TD></TR>\n";
                                                         string contenido="";
@@ -3571,7 +3575,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                         }
                                                         contenido+=to_string(apuntadoresB.b_pointers[15]);
                                                         dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                                        dot+="</TABLE>>];";
+                                                        dot+="</TABLE>>];\n";
                                                         anterior=apuntadoresB1.b_pointers[c];
                                                         
 
@@ -3582,7 +3586,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                                     fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
                                                                     fread(&carpetaB, 64, 1, archivo);
                                                                     
-                                                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a])+"\n";
                                                                     dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                                     dot+="<TR><TD>BLOQUE CARPETA</TD><TD>"+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
                                                                     dot+="<TR><TD>b_name</TD><TD>b_inodo</TD></TR>\n";
@@ -3592,19 +3596,19 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                                             dot+="<TR><TD>"+name_B_C+"</TD><TD>"+to_string(carpetaB.b_content[x].b_inodo)+"</TD></TR>\n";
                                                                         }
                                                                     }
-                                                                    dot+="</TABLE>>];";
+                                                                    dot+="</TABLE>>];\n";
                                                                     
                                                                     anterior=apuntadoresB.b_pointers[a];
                                                                     continue;
                                                                 }
                                                                 fseek(archivo, super.s_block_start+apuntadoresB.b_pointers[a]*64, SEEK_SET);
                                                                 fread(&archivoB, 64, 1, archivo);
-                                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a]);
+                                                                dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(apuntadoresB.b_pointers[a])+"\n";
                                                                 dot+="Bloque"+to_string(apuntadoresB.b_pointers[a])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                                                 dot+="<TR><TD>BLOQUE ARCHIVO "+to_string(apuntadoresB.b_pointers[a])+"</TD></TR>\n";
                                                                 string contenido=archivoB.b_content;
                                                                 dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                                                dot+="</TABLE>>];";
+                                                                dot+="</TABLE>>];\n";
                                                                 anterior=apuntadoresB.b_pointers[a];
                                                             }
 
@@ -3616,11 +3620,12 @@ void Comando::rep(string name,string path,string id,string rutai){
                                         }
                                         continue;
                                     }
-                                    if(tablaInodo[i].i_type==0){
+                                    if(tablaInodo[i].i_type=='0'){
                                         fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
                                         fread(&carpetaB, 64, 1, archivo);
-                                        
-                                        dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                        if(anterior>0){
+                                            dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j])+"\n";
+                                        }
                                         dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                         dot+="<TR><TD>BLOQUE CARPETA</TD><TD>"+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
                                         dot+="<TR><TD>b_name</TD><TD>b_inodo</TD></TR>\n";
@@ -3630,19 +3635,19 @@ void Comando::rep(string name,string path,string id,string rutai){
                                                 dot+="<TR><TD>"+name_B_C+"</TD><TD>"+to_string(carpetaB.b_content[x].b_inodo)+"</TD></TR>\n";
                                             }
                                         }
-                                        dot+="</TABLE>>];";
+                                        dot+="</TABLE>>];\n";
                                         
                                         anterior=tablaInodo[i].i_block[j];
                                         continue;
                                     }
                                     fseek(archivo, super.s_block_start+tablaInodo[i].i_block[j]*64, SEEK_SET);
                                     fread(&archivoB, 64, 1, archivo);
-                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j]);
+                                    dot+="Bloque"+to_string(anterior)+"->Bloque"+to_string(tablaInodo[i].i_block[j])+"\n";
                                     dot+="Bloque"+to_string(tablaInodo[i].i_block[j])+"[label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n ";
                                     dot+="<TR><TD>BLOQUE ARCHIVO "+to_string(tablaInodo[i].i_block[j])+"</TD></TR>\n";
                                     string contenido=archivoB.b_content;
                                     dot+="<TR><TD>"+contenido+"</TD></TR>\n";
-                                    dot+="</TABLE>>];";
+                                    dot+="</TABLE>>];\n";
                                     anterior=tablaInodo[i].i_block[j];
                                 }
                                 
@@ -3653,7 +3658,8 @@ void Comando::rep(string name,string path,string id,string rutai){
                     }
                 }
                 dot+="}";
-                cout<<dot<<endl;
+                //cout<<dot<<endl;
+                escribirDOT(dot,name_p,rutaCompleta);
                 fclose(archivo);
                 //escribirDOT(dot,name_p,rutaCompleta);
             }else if(strcmp(name.c_str(),"bm_inode")==0){
@@ -3716,7 +3722,7 @@ void Comando::rep(string name,string path,string id,string rutai){
                 fseek(archivo, inicio, SEEK_SET);
                 fread(&sb, sizeof (superBloque), 1, archivo);
                 inodo actual;
-                dotTree="digraph g { graph [\nrankdir = \"LR\"\n]";
+                dotTree="digraph g { label=\"REPORTE TREE\"\ngraph [\nrankdir = \"LR\"\n]";
                 dotTree+="node [\nfontsize = \"16\"\nshape = \"ellipse\"\n]";
                 dotTree+="edge [];\n";
 
@@ -3727,7 +3733,9 @@ void Comando::rep(string name,string path,string id,string rutai){
                 dotTree+="<f20> INODO "+to_string(0)+" |{i_type|"+actual.i_type+"}";
                 
                 for(int j=0;j<16;j++){
-                    dotTree+="| {i_block_"+to_string(j)+"|<f"+to_string(j)+">"+to_string(actual.i_block[j])+"}";
+                    if(actual.i_block[j]>-1){
+                        dotTree+="| {i_block_"+to_string(j)+"|<f"+to_string(j)+">"+to_string(actual.i_block[j])+"}";
+                    }
                 }
                 dotTree+="| I_perm "+to_string(actual.i_perm)+"\" \n];\n";
                 
@@ -3736,22 +3744,69 @@ void Comando::rep(string name,string path,string id,string rutai){
                         dotTree+="\"node"+to_string(0)+"\":<f"+to_string(j)+"> -> \"block"+to_string(actual.i_block[j])+"\":<f20>;\n";
                     }
                 }
-                TreeCarpeta(sb.s_inode_start,archivo,0);
+                TreeCascada(sb.s_inode_start,archivo,0);
                 dotTree+="}";
                 cout<<dotTree<<endl;
+                escribirDOT(dotTree,name_p,rutaCompleta);
             }else if(name=="sb"){
                 fseek(archivo, inicio, SEEK_SET);
                 fread(&sb, sizeof (superBloque), 1, archivo);
                 fclose(archivo);
 
                 string dot;
+
                 dot+="digraph D{";
-                dot+="label=\"REPORTE SUPER BLOQUE";
-                dot+=name;
-                dot+="\";";
-                dot+="nodo_super_bloque[shape=record label=\"{REPORTE SUPER BLOQUE|";
-                dot+="{|";
+                dot+="label=\"REPORTE SUPER BLOQUE\"";
+                dot+="nodo_mbr[shape=platntext label=<<TABLE color=\"black\" cellspacing=\"0\" cellpadding=\"10\">\n";
+                dot+="<TR><TD align=\"left\" color=\"white\" bgcolor=\"darkslateblue\">REPORTE SUPER BLOQUE</TD><TD color=\"white\" bgcolor=\"darkslateblue\"></TD></TR>\n";
+                dot+="<TR><TD color=\"white\">NOMBRE</TD ><TD color=\"white\">";
+                string aux=particion.mnt_particion.part_name;
+                dot+=aux;
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">sb_inodes_count</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=to_string(sb.s_inodes_count);
+                dot+="</TD></TR>\n<TR><TD color=\"white\">sb_block_count</TD><TD color=\"white\">";
+                dot+=to_string(sb.s_blocks_count);
+
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">sb_inodes_free</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=to_string(sb.s_free_inodes_count);
+                dot+="</TD></TR>\n<TR><TD color=\"white\">sb_block_free</TD><TD color=\"white\">";
+                dot+=to_string(sb.s_free_blocks_count);
+
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">sb_ultimo_montaje</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=sb.s_mtime;
+                dot+="</TD></TR>\n<TR><TD color=\"white\">sb_numero_montajes</TD><TD color=\"white\">";
+                dot+=to_string(sb.s_mnt_count);
+
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">sb_inicio</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=to_string(sizeof(sb));
+                dot+="</TD></TR>\n<TR><TD color=\"white\">sb_inicio_bm_inode</TD><TD color=\"white\">";
+                dot+=to_string(sb.s_bm_inode_start);
+
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">sb_nicio_bm_block</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=to_string(sb.s_bm_block_start);
+                dot+="</TD></TR>\n<TR><TD color=\"white\">sb_inicio_inodes</TD><TD color=\"white\">";
+                dot+=to_string(sb.s_inode_start);
+
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">sb_inicio_blocks</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=to_string(sb.s_bm_block_start);
+                dot+="</TD></TR>\n<TR><TD color=\"white\">sb_size_inodo</TD><TD color=\"white\">";
+                dot+=to_string(sizeof(inodo));
+
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">sb_size_block</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=to_string(64);
+                dot+="</TD></TR>\n<TR><TD color=\"white\">sb_first_free</TD><TD color=\"white\">";
+                dot+=to_string(sb.s_firts_ino);
+
+                dot+="</TD></TR>\n<TR><TD bgcolor=\"lightslateblue\" color=\"white\">sb_first_block</TD><TD bgcolor=\"lightslateblue\" color=\"white\">";
+                dot+=to_string(sb.s_first_blo);
+                dot+="</TD></TR>\n<TR><TD color=\"white\">magic_num</TD><TD color=\"white\">";
+                dot+=to_string(sb.s_magic);
+
+
+                dot+="</TD></TR>\n";
+                dot+="</TABLE>>];";
                 dot+="}";
+                escribirDOT(dot,name_p,rutaCompleta);
             }else if(name=="file"){
                 fseek(archivo, inicio, SEEK_SET);
                 fread(&sb, sizeof (superBloque), 1, archivo);
@@ -4935,7 +4990,7 @@ string TreeCascada(int pos,FILE* archivo,int num){
                 //cout<<"PASE EL IF EN "<<i<<endl;
                 if(i<13){
                     
-
+                    cout<<"inodo "<<num<<" ->   bloque "<<InodoActual.i_block[i]<<endl;
                     dotTree+="\"node"+to_string(num)+"\":<f"+to_string(i)+"> -> \"block"+to_string(InodoActual.i_block[i])+"\":<f20>\n";
                     TreeCarpeta(InodoActual.i_block[i]*sizeof(bloqueCarpetas)+superLog.s_block_start,archivo,InodoActual.i_block[i]);
                     
@@ -4985,7 +5040,6 @@ string TreeCascada(int pos,FILE* archivo,int num){
                                     for(int l=0;l<16;l++){
                                         if(apuntadores3.b_pointers[l]>-1){
                                             TreeCarpeta(apuntadores3.b_pointers[l]*sizeof(bloqueCarpetas)+superLog.s_block_start,archivo,apuntadores3.b_pointers[l]);
-                                            
                                         }
                                     }
                                 }
@@ -5007,13 +5061,13 @@ string TreeCascada(int pos,FILE* archivo,int num){
     bloqueArchivos archivoB;
     fseek(archivo,pos, SEEK_SET);
     fread(&bloque, sizeof(bloqueCarpetas), 1, archivo);
-    
     dotTree+="\"block"+to_string(num)+"\" [ shape=\"record\"\n color=\"red\" label = \"";
     dotTree+="<f20> BLOQUE CARPETA "+to_string(num);
-
+    //cout<<"bloque num "<<num<<endl;
     for(int j=0;j<4;j++){
         string n=bloque.b_content[j].b_name;
         if(bloque.b_content[j].b_inodo>-1){
+            
            dotTree+="| {"+n+"|<f"+to_string(j)+">"+to_string(bloque.b_content[j].b_inodo)+"}";
         }
     }
@@ -5030,7 +5084,9 @@ string TreeCascada(int pos,FILE* archivo,int num){
             dotTree+="<f20> inodo"+to_string(bloque.b_content[i].b_inodo)+" |{i_type|"+actual.i_type+"}";
             
             for(int j=0;j<16;j++){
-                dotTree+="| {i_block_"+to_string(j)+"|<f"+to_string(j)+">"+to_string(actual.i_block[j])+"}";
+                if(actual.i_block[j]>-1){
+                    dotTree+="| {i_block_"+to_string(j)+"|<f"+to_string(j)+">"+to_string(actual.i_block[j])+"}";
+                }
             }
             dotTree+="| I_perm "+to_string(actual.i_perm)+"\" \n];\n";
             
@@ -5041,15 +5097,21 @@ string TreeCascada(int pos,FILE* archivo,int num){
             }
             
             if(actual.i_type=='0'){
+                cout<<"carpeta"<<endl;
+                cout<<"bloque "<<num<<" ->   inodo "<<bloque.b_content[i].b_inodo<<endl;
                 TreeCascada(bloque.b_content[i].b_inodo*sizeof(inodo)+superLog.s_inode_start,archivo,bloque.b_content[i].b_inodo);                
             }else if (actual.i_type=='1'){
                 for(int i=0;i<16;i++){
                     if(actual.i_block[i]>-1){
+                        cout<<"archivo"<<endl;
+                        cout<<"inodo "<<bloque.b_content[i].b_inodo<<" ->   bloque "<<actual.i_block[i]<<endl;
                         fseek(archivo,actual.i_block[i] *64+superLog.s_block_start, SEEK_SET);
                         fread(&archivoB, 64, 1, archivo);
                         dotTree+="\"block"+to_string(actual.i_block[i])+"\" [label = \"";
-                        dotTree+="<f20> BLOQUE ARCHIVO "+to_string(actual.i_block[i])+"\"";
-
+                        dotTree+="<f20> BLOQUE ARCHIVO "+to_string(actual.i_block[i])+"";
+                        string n=archivoB.b_content;
+                        n = replace_txt(n, "\n", "\\n");
+                        dotTree+="|"+n+"\"";
                         dotTree+=" shape=\"record\"\n color=\"yellow\"];\n";
                     }
                 }
